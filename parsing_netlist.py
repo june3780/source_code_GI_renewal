@@ -1,9 +1,12 @@
 import json
-import pickle
-import sys
 import copy
-
+import time
 def get_module_dict(wherethemodule):
+    macro_list=['spsram_hd_256x23m4m','spsram_hd_2048x32m4s','spsram_hd_256x22m4m','sprf_hs_128x38m2s'\
+    ,'TS1N40LPB1024X32M4FWBA','TS1N40LPB2048X36M4FWBA','TS1N40LPB256X23M4FWBA','TS1N40LPB128X63M4FWBA'\
+    ,'TS1N40LPB256X12M4FWBA','TS1N40LPB512X23M4FWBA','TS1N40LPB1024X128M4FWBA','TS1N40LPB2048X32M4FWBA'\
+    ,'TS1N40LPB256X22M4FWBA']
+    assign_dict=dict()
     with open(wherethemodule,'r') as fw:
         module_str=fw.readlines()
     fw.close()
@@ -23,10 +26,10 @@ def get_module_dict(wherethemodule):
         module_name=str()
         temp_str=ivalue.split(';')
         for kvalue in temp_str:
-            if 'module ' in kvalue and 'endmodule' not in kvalue:
+            if kvalue.strip().startswith('module '):
                 module_name=kvalue.split(' ')[1]
                 module_dict.update({module_name:{}})
-            elif 'input ' in kvalue:
+            elif kvalue.strip().startswith('input '):
                 if 'input' not in module_dict[module_name]:
                     module_dict[module_name].update(({'input':[]}))
                 if '[' in kvalue:
@@ -69,7 +72,7 @@ def get_module_dict(wherethemodule):
                         jvalue=kvalue.split('input ')[1].replace(';','').strip()
                         module_dict[module_name]['input'].append(jvalue)
 
-            elif 'output' in kvalue:
+            elif kvalue.strip().startswith('output '):
                 if 'output' not in module_dict[module_name]:
                     module_dict[module_name].update(({'output':[]}))
                 
@@ -111,7 +114,8 @@ def get_module_dict(wherethemodule):
                         jvalue=kvalue.split('output ')[1].replace(';','').strip()
                         module_dict[module_name]['output'].append(jvalue)
 
-            elif 'wire' in kvalue:
+            elif kvalue.strip().startswith('wire '):
+
                 if 'wire' not in module_dict[module_name]:
                     module_dict[module_name].update(({'wire':[]}))
                 
@@ -153,12 +157,17 @@ def get_module_dict(wherethemodule):
                         jvalue=kvalue.split('wire ')[1].replace(';','').strip()
                         module_dict[module_name]['wire'].append(jvalue)
 
-            elif 'assign' in kvalue:
-                print(kvalue)
+            elif kvalue.strip().startswith('assign '):
 
+                temp_output=kvalue.split('assign')[1].split('=')[0].strip()
+                temp_value=kvalue.split('assign')[1].split('=')[1].strip()
+                if module_name not in assign_dict:
+                    assign_dict.update({module_name:dict()})
+                assign_dict[module_name].update({temp_output:temp_value})
 
-
-            elif 'endmodule' not in kvalue and 'input' not in kvalue and 'wire' not in kvalue and 'output' not in kvalue:
+            elif kvalue.strip().startswith('endmodule'):
+                continue
+            else:
                 component_or_module=kvalue.strip().split(' ')[0].strip()
                 list_of_line=' '.join(kvalue.strip().split(' ')[2:])
                 module_dict[module_name].update({kvalue.strip().split(' ')[1].strip():{'id':component_or_module}})
@@ -170,7 +179,7 @@ def get_module_dict(wherethemodule):
                     module_dict[module_name][kvalue.strip().split(' ')[1].strip()]['ports'].update({tvalue.split('(')[0].strip():tvalue.split('(')[1].strip().split(')')[0].strip()})
 
 
-
+    used_components_list=dict()
 
     for ivalue in module_dict:
         module_dict[ivalue].update({'components_counts':{}})
@@ -181,16 +190,47 @@ def get_module_dict(wherethemodule):
 
                 if module_dict[ivalue][kvalue]['id'] not in module_dict:
                     module_dict[ivalue]['components_counts'].update({kvalue:module_dict[ivalue][kvalue]['id']})
+                    if module_dict[ivalue][kvalue]['id'] not in used_components_list:
+                        used_components_list.update({module_dict[ivalue][kvalue]['id']:int()})
+                    used_components_list[module_dict[ivalue][kvalue]['id']]=used_components_list[module_dict[ivalue][kvalue]['id']]+1
 
                 else:
                     module_dict[ivalue]['module_counts'].update({kvalue:module_dict[ivalue][kvalue]['id']})
+
+    
+
+    for ivalue in assign_dict:
+        for kvalue in assign_dict[ivalue]:
+
+            if kvalue in module_dict[ivalue]['wire']:
+                module_dict[ivalue]['wire'].remove(kvalue)
+
+            if assign_dict[ivalue][kvalue] in module_dict[ivalue]['wire']:
+                module_dict[ivalue]['wire'].remove(assign_dict[ivalue][kvalue])
+
+            for rvalue in module_dict:
+                for tvalue in module_dict[rvalue]['module_counts']:
+                    if ivalue==module_dict[rvalue]['module_counts'][tvalue]:
+
+                        if 'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue] not in module_dict[rvalue]['components_counts']:
+                            module_dict[rvalue]['components_counts'].update({'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]:str()})
+                        module_dict[rvalue]['components_counts']['assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]]='assign_'+kvalue
+                        if 'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue] not in module_dict[rvalue]:
+                            module_dict[rvalue].update({'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]:dict()})
+                        module_dict[rvalue]['assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]].update({'id':'assign_'+kvalue,'ports':{'A':module_dict[rvalue][tvalue]['ports'][kvalue]}})
+
+                        if 'assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue not in module_dict[rvalue]['components_counts']:
+                            module_dict[rvalue]['components_counts'].update({'assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue:str()})
+                        module_dict[rvalue]['components_counts']['assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue]='assign_'+assign_dict[ivalue][kvalue]
+                        if 'assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue not in module_dict[rvalue]:
+                            module_dict[rvalue].update({'assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue:dict()})
+                        module_dict[rvalue]['assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue].update({'id':'assign_'+assign_dict[ivalue][kvalue],'ports':{'A':module_dict[rvalue][tvalue]['ports'][assign_dict[ivalue][kvalue]]}})
 
 
     for ivalue in module_dict:
         array_input=list()
         array_output=list()
         array_wire=list()
-
         for kvalue in module_dict[ivalue]['input']:
             if '[' in kvalue:
                 if kvalue.split('[')[0] not in array_input:
@@ -210,11 +250,7 @@ def get_module_dict(wherethemodule):
         for kvalue in module_dict[ivalue]:
             if kvalue=='input' or kvalue=='output' or kvalue=='wire' or kvalue=='module_counts' or kvalue=='components_counts':
                 continue
-            if module_dict[ivalue][kvalue]['id']!='spsram_hd_256x23m4m'\
-                and module_dict[ivalue][kvalue]['id']!='spsram_hd_2048x32m4s'\
-                and module_dict[ivalue][kvalue]['id']!='spsram_hd_256x22m4m'\
-                and module_dict[ivalue][kvalue]['id']!='sprf_hs_128x38m2s'\
-                and kvalue in module_dict[ivalue]['components_counts']:
+            elif module_dict[ivalue][kvalue]['id'] not in macro_list and kvalue in module_dict[ivalue]['components_counts']:
                 continue
                 
             else:
@@ -308,7 +344,7 @@ def get_module_dict(wherethemodule):
 
                 module_dict[ivalue][kvalue]['ports']=new_ports_list
 
-
+    
 
     '''print('@#@#@#@###@##@#@#@##@#@#')
     for ivalue in module_dict:
@@ -328,8 +364,6 @@ def get_module_dict(wherethemodule):
                 print(kvalue)
                 print(temp_output[kvalue])
                 print()'''
-
-
     return module_dict
 
 
@@ -337,6 +371,7 @@ def get_module_dict(wherethemodule):
 
 
 def module_ports(id,port_name,port_list,All):
+
     new_ports_compo=dict()
     array_input=list()
     array_output=list()
@@ -390,84 +425,130 @@ def module_ports(id,port_name,port_list,All):
 
 
 
+   
 def macro_ports(id,port_name,port_list):
-    ### lef 파일에서 단일 포트가 배열로 정의 되지 않는다면 => ###  +'['+str(0-idx)+']'  ### 삭제하기 !!
+    ### lef 파일에서 단일 포트가 배열로 정의 되지 않는다면 => ###    ### 삭제하기 !!
     new_ports_compo=dict()
 
     if id=='spsram_hd_256x23m4m':
-
         if port_name=='RTSEL' or port_name=='WTSEL':
-            for idx in range(2):
-                new_ports_compo.update({port_name+'['+str(1-idx)+']':port_list[idx]})
-
+            num=2
         elif port_name=='Q' or port_name=='BWEB' or port_name=='BWEBM' or port_name=='D' or port_name=='DM':
-            for idx in range(23):
-                new_ports_compo.update({port_name+'['+str(22-idx)+']':port_list[idx]})
-        
+            num=23
         elif port_name=='A' or port_name=='AM':
-            for idx in range(8):
-                new_ports_compo.update({port_name+'['+str(7-idx)+']':port_list[idx]})
-        
+            num=8
         else:
-            for idx in range(1):
-                new_ports_compo.update({port_name+'['+str(0-idx)+']':port_list[idx]})
-
+            num=1
 
     elif id=='spsram_hd_2048x32m4s':
-
         if port_name=='RTSEL' or port_name=='WTSEL':
-            for idx in range(2):
-                new_ports_compo.update({port_name+'['+str(1-idx)+']':port_list[idx]})
-
+            num=2
         elif port_name=='Q' or port_name=='BWEB' or port_name=='BWEBM' or port_name=='D' or port_name=='DM':
-            for idx in range(32):
-                new_ports_compo.update({port_name+'['+str(31-idx)+']':port_list[idx]})
-        
+            num=32
         elif port_name=='A' or port_name=='AM':
-            for idx in range(11):
-                new_ports_compo.update({port_name+'['+str(10-idx)+']':port_list[idx]})
-        
+            num=11
         else:
-            for idx in range(1):
-                new_ports_compo.update({port_name+'['+str(0-idx)+']':port_list[idx]})
-
+            num=1
 
     elif id=='spsram_hd_256x22m4m':
-
         if port_name=='RTSEL' or port_name=='WTSEL':
-            for idx in range(2):
-                new_ports_compo.update({port_name+'['+str(1-idx)+']':port_list[idx]})
-
+            num=2
         elif port_name=='Q' or port_name=='BWEB' or port_name=='BWEBM' or port_name=='D' or port_name=='DM':
-            for idx in range(22):
-                new_ports_compo.update({port_name+'['+str(21-idx)+']':port_list[idx]})
-        
+            num=22
         elif port_name=='A' or port_name=='AM':
-            for idx in range(8):
-                new_ports_compo.update({port_name+'['+str(7-idx)+']':port_list[idx]})
-        
+            num=8
         else:
-            for idx in range(1):
-                new_ports_compo.update({port_name+'['+str(0-idx)+']':port_list[idx]})
-
+            num=1
 
     elif id=='sprf_hs_128x38m2s':
         if port_name=='TSEL':
-            for idx in range(2):
-                new_ports_compo.update({port_name+'['+str(1-idx)+']':port_list[idx]})
-
+            num=2
         elif port_name=='Q' or port_name=='BWEB' or port_name=='D':
-            for idx in range(38):
-                new_ports_compo.update({port_name+'['+str(37-idx)+']':port_list[idx]})
-        
+            num=38
         elif port_name=='A':
-            for idx in range(7):
-                new_ports_compo.update({port_name+'['+str(6-idx)+']':port_list[idx]})
-        
+            num=7
         else:
-            for idx in range(1):
-                new_ports_compo.update({port_name+'['+str(0-idx)+']':port_list[idx]})
+            num=1
+     
+    elif id=='TS1N40LPB1024X32M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=10
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=32
+        else:
+            num=1
+    
+    elif id=='TS1N40LPB2048X36M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=11
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=36
+        else:
+            num=1
 
+    elif id=='TS1N40LPB256X23M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=8
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=23
+        else:
+            num=1
+
+    elif id=='TS1N40LPB128X63M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=7
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=63
+        else:
+            num=1
+
+    elif id=='TS1N40LPB256X12M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=8
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=12
+        else:
+            num=1 
+
+    elif id=='TS1N40LPB512X23M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=9
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=23
+        else:
+            num=1 
+
+    elif id=='TS1N40LPB1024X128M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=10
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=128
+        else:
+            num=1 
+        
+    elif id=='TS1N40LPB2048X32M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=11
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=32
+        else:
+            num=1 
+
+    elif id=='TS1N40LPB256X22M4FWBA':
+        if port_name=='AM' or port_name=='A':
+            num=8
+        elif port_name=='BWEBM' or port_name=='BWEB' or port_name=='DM' or port_name=='D' or port_name=='Q':
+            num=22
+        else:
+            num=1 
+
+
+    if num!=1:
+        for idx in range(num):
+            new_ports_compo.update({port_name+'['+str(num-1-idx)+']':port_list[idx]})
+    else:
+        new_ports_compo.update({port_name:port_list[0]})
+        
     return new_ports_compo
 
 
@@ -489,7 +570,7 @@ def get_add_mod(All,upper_module,info):
 
 
 
-def checking_list(All,ivalue,toptop):
+def checking_list_func(All,ivalue,toptop):
     temp_list=ivalue.split('/')
     temp_preview=str()
     for idx in range(len(temp_list)):
@@ -508,8 +589,7 @@ def checking_list(All,ivalue,toptop):
 
 
 
-def get_tree(All):
-
+def get_tree(All,diff):
     who_is_top=list()
     for ivalue in All:
         who_is_top.append(ivalue)
@@ -521,7 +601,7 @@ def get_tree(All):
                     who_is_top.remove(All[ivalue][kvalue]['id'])
 
     top_module=who_is_top[0]
-
+    print(top_module)
 
     all_tree=dict()
     treeAll=dict()
@@ -532,7 +612,7 @@ def get_tree(All):
 
     list_tree_keys=list(all_tree.keys())
     for ivalue in list_tree_keys:
-        checking_list(All,ivalue,top_module)
+        checking_list_func(All,ivalue,top_module)
     
     for ivalue in all_tree:
         all_tree[ivalue].update({'submodule':{}})
@@ -555,8 +635,48 @@ def get_tree(All):
             codict.update({ivalue+' '+kvalue:All[top_module][ivalue]['id']})
 
 
+    will_del=list()
+    for ivalue in components_list_with_ports:
+        if ivalue.split('/')[-1].startswith('assign_') and '_assign_' in ivalue and ivalue.split(' ')[1]=='A':
+            will_del.append(ivalue)
+    for ivalue in will_del:
+        components_list_with_ports.remove(ivalue)
+
+    will_del=list()
+    for ivalue in only_components:
+        if ivalue.split('/')[-1].startswith('assign_') and '_assign_' in ivalue:
+            will_del.append(ivalue)
+    for ivalue in will_del:
+        only_components.remove(ivalue)
+
+
+    print(len(components_list_with_ports))
+    print(len(only_components))
+    print()
+
     net_group=dict()
     debt_group=dict()
+    
+
+    for ivalue in all_tree:
+        for kvalue in all_tree[ivalue]['info']['components_counts']:
+            for tvalue in all_tree[ivalue]['info'][kvalue]['ports']:
+
+                if all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b0':
+                    if 'constant0' not in net_group:
+                        net_group.update({'constant0':list()})
+                    if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant0']:
+                        net_group['constant0'].append(ivalue+'/'+kvalue+' '+tvalue)
+
+                elif all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b1':
+                    if 'constant1' not in net_group:
+                        net_group.update({'constant1':list()})
+                    if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant1']:
+                        net_group['constant1'].append(ivalue+'/'+kvalue+' '+tvalue)
+
+
+    temp_all_tree=copy.deepcopy(all_tree)
+    #print(all_tree['u_l2cc/pl310_present_u_pl310_top']['info'])
 
     ccc=int()
     while True:
@@ -578,7 +698,6 @@ def get_tree(All):
             if ivalue==current_mod:
                 temp_debt_dict.update({ivalue:debt_group[ivalue]})
 
-
         for ivalue in debt_group:
             tempports=ivalue.split('/')[-1]
             tempsub=ivalue.split('/')[-2]
@@ -586,8 +705,18 @@ def get_tree(All):
 
             if ivalue==current_mod:
                 continue
+            
+            if tempports not in all_tree[current_mod]['info'][tempsub]['ports']:
+                submodule_id=all_tree[current_mod]['submodule'][tempsub]
+                if tempports in All[submodule_id]['output']:
+                    if ivalue not in net_group:
+                        net_group.update({ivalue:list()})
+                    for rvalue in debt_group[ivalue]:
+                        net_group[ivalue].append(rvalue)
+                    continue
 
             if 'wire' in all_tree[current_mod]['info']:
+                #print(ivalue) 문제가 되는 ivalue= u_l2cc/pl310_present_u_pl310_top/TAGCLKOUT
                 if all_tree[current_mod]['info'][tempsub]['ports'][tempports] in all_tree[current_mod]['info']['wire']:
                     if current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports] not in net_group:
                         net_group.update({current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]:list()})
@@ -602,6 +731,20 @@ def get_tree(All):
                 for kvalue in debt_group[ivalue]:
                     if kvalue not in temp_debt_dict[current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]]:
                         temp_debt_dict[current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]].append(kvalue)
+                
+            elif all_tree[current_mod]['info'][tempsub]['ports'][tempports]=='1\'b0':
+                if 'constant0' not in net_group:
+                    net_group.update({'constant0':list()})
+                for kvalue in debt_group[ivalue]:
+                    if kvalue not in net_group['constant0']:
+                        net_group['constant0'].append(kvalue)
+
+            elif all_tree[current_mod]['info'][tempsub]['ports'][tempports]=='1\'b1':
+                if 'constant1' not in net_group:
+                    net_group.update({'constant1':list()})
+                for kvalue in debt_group[ivalue]:
+                    if kvalue not in net_group['constant1']:
+                        net_group['constant1'].append(kvalue)
             
 
         debt_group=copy.deepcopy(temp_debt_dict)
@@ -614,6 +757,7 @@ def get_tree(All):
                     for tvalue in all_tree[ivalue]['info'][kvalue]['ports']:
 
                         if 'wire' in all_tree[ivalue]['info']:
+
                             if all_tree[ivalue]['info'][kvalue]['ports'][tvalue] in all_tree[ivalue]['info']['wire']:
                                 if ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue] not in net_group:
                                     net_group.update({ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]:list()})
@@ -625,10 +769,19 @@ def get_tree(All):
                             if ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue] not in debt_group:
                                 debt_group.update({ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]:list()})
                             debt_group[ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]].append(ivalue+'/'+kvalue+' '+tvalue)
+                        
+                        elif all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b0':
+                            if 'constant0' not in net_group:
+                                net_group.update({'constant0':list()})
+                            if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant0']:
+                                net_group['constant0'].append(ivalue+'/'+kvalue+' '+tvalue)
+
+                        elif all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b1':
+                            if 'constant1' not in net_group:
+                                net_group.update({'constant1':list()})
+                            if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant1']:
+                                net_group['constant1'].append(ivalue+'/'+kvalue+' '+tvalue)
         
-
-
-
         for ivalue in will_del:
             del all_tree[ivalue]
             del all_tree[ivalue.split('/'+ivalue.split('/')[-1])[0]]['submodule'][ivalue.split('/')[-1]]
@@ -636,9 +789,8 @@ def get_tree(All):
         if counting==0:
             break
 
-
 ######################## top module의 sub module 처리
-
+    
     temp_debt_dict=dict()
     for ivalue in debt_group:
         if 'wire' in all_tree[ivalue.split('/')[0]]['info']:
@@ -651,7 +803,7 @@ def get_tree(All):
             if ivalue not in temp_debt_dict:
                 temp_debt_dict.update({ivalue:debt_group[ivalue]})
             temp_debt_dict[ivalue].extend(debt_group[ivalue])
-
+        
     debt_group=temp_debt_dict
 
     for ivalue in all_tree:
@@ -668,9 +820,20 @@ def get_tree(All):
                         debt_group.update({ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]:list()})
                     debt_group[ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]].append(ivalue+'/'+kvalue+' '+tvalue)
 
+                elif all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b0':
+                    if 'constant0' not in net_group:
+                        net_group.update({'constant0':list()})
+                    if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant0']:
+                        net_group['constant0'].append(ivalue+'/'+kvalue+' '+tvalue)
+
+                elif all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b1':
+                    if 'constant1' not in net_group:
+                        net_group.update({'constant1':list()})
+                    if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant1']:
+                        net_group['constant1'].append(ivalue+'/'+kvalue+' '+tvalue)
+
 
 ######################## top module 처리
-
     for ivalue in debt_group:
 
         if 'wire' in All[top_module]:
@@ -685,56 +848,231 @@ def get_tree(All):
         if All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] in All[top_module]['input'] or All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] in All[top_module]['output']:
             if All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] not in net_group:
                 net_group.update({All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]:list()})
+
             for kvalue in debt_group[ivalue]:
                 if kvalue not in net_group[All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]]:
                     net_group[All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]].append(kvalue)
-    
+
+
     for ivalue in All[top_module]['components_counts']:
         for kvalue in All[top_module][ivalue]['ports']:
-            net_group[All[top_module][ivalue]['ports'][ivalue]].append(ivalue+' '+kvalue)
+
+            if All[top_module][ivalue]['ports'][kvalue]=='1\'b0':
+                if 'constant0' not in net_group:
+                    net_group.update({'constant0':list()})
+                if ivalue+' '+kvalue not in net_group['constant0']:
+                    net_group['constant0'].append(ivalue+' '+kvalue)
+                continue
+
+            elif All[top_module][ivalue]['ports'][kvalue]=='1\'b1':
+                if 'constant1' not in net_group:
+                    net_group.update({'constant1':list()})
+                if ivalue+' '+kvalue not in net_group['constant1']:
+                    net_group['constant1'].append(ivalue+' '+kvalue)
+                continue
+
+            if All[top_module][ivalue]['ports'][kvalue] not in net_group:
+                net_group.update({All[top_module][ivalue]['ports'][kvalue]:list()})
+            net_group[All[top_module][ivalue]['ports'][kvalue]].append(ivalue+' '+kvalue)
+
+
+########################################################################################################################################################################## assign 처리
+    assign_temp=dict()
+    for ivalue in net_group:
+        for kvalue in net_group[ivalue]:
+            if kvalue.split('/')[-1].startswith('assign_') and '_assign_' in kvalue.split('/')[-1] and kvalue.split(' ')[1]=='A':
+                assign_temp.update({kvalue.split(' ')[0]:ivalue})
+
+    checking_list=dict()
+    for ivalue in assign_temp:
+        temp_assign=ivalue.split('/')[-1]
+        first_assign=temp_assign.split('_assign_')[0].split('assign_')[1]
+        second_assign=temp_assign.split('_assign_')[1]
+        if ivalue.split(ivalue.split('/')[-1])[0] not in checking_list:
+            checking_list.update({ivalue.split(ivalue.split('/')[-1])[0]:dict({'wires':list(),'groups':list()})})
+        if first_assign not in checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires']:
+            checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires'].append(first_assign)
+        if second_assign not in checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires']:
+            checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires'].append(second_assign)
+        checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['groups'].append([first_assign,second_assign])
+
+
+
+    sum_assign=dict()
+    for ivalue in checking_list:
+        previous_wire_counts=int()
+        will_exterminate_group=list()
+        will_add_wire_groups=list()
+        will_delete_group=list()
+        while len(checking_list[ivalue]['wires'])!=0:
+            che='che'
+            if len(will_add_wire_groups)!=0:
+                sum_assign[ivalue].extend([will_add_wire_groups])
+
+            for kvalue in will_exterminate_group:
+                if kvalue in checking_list[ivalue]['wires']:
+                    checking_list[ivalue]['wires'].remove(kvalue)
+            
+            for kvalue in will_delete_group:
+                if kvalue in checking_list[ivalue]['groups']:
+                    checking_list[ivalue]['groups'].remove(kvalue)
+            
+
+            if ivalue not in sum_assign:
+                sum_assign.update({ivalue:list()})
+            will_exterminate_group=list()
+            will_add_wire_groups=list()
+            for kdx in range(len(checking_list[ivalue]['groups'])):
+                if len(sum_assign[ivalue])==0:
+                    sum_assign[ivalue].append(checking_list[ivalue]['groups'][kdx])
+                    will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
+                    will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
+                    will_delete_group.append(checking_list[ivalue]['groups'][kdx])
+
+                else:
+                    for tdx in range(len(sum_assign[ivalue])):
+                        if checking_list[ivalue]['groups'][kdx][0] in sum_assign[ivalue][tdx] and checking_list[ivalue]['groups'][kdx][1] not in sum_assign[ivalue][tdx]:
+                            che='ehc'
+                            sum_assign[ivalue][tdx].append(checking_list[ivalue]['groups'][kdx][1])
+                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
+                            will_delete_group.append(checking_list[ivalue]['groups'][kdx])
+                        elif checking_list[ivalue]['groups'][kdx][1] in sum_assign[ivalue][tdx] and checking_list[ivalue]['groups'][kdx][0] not in sum_assign[ivalue][tdx]:
+                            che='ehc'
+                            sum_assign[ivalue][tdx].append(checking_list[ivalue]['groups'][kdx][0])
+                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
+                            will_delete_group.append(checking_list[ivalue]['groups'][kdx])
+                        elif checking_list[ivalue]['groups'][kdx][0] in sum_assign[ivalue][tdx] and checking_list[ivalue]['groups'][kdx][1] in sum_assign[ivalue][tdx]:
+                            che='ehc'
+                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
+                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
+                            will_delete_group.append(checking_list[ivalue]['groups'][kdx])
+                        else:
+                            if len(checking_list[ivalue]['wires'])!=previous_wire_counts:
+                                che='ehc'
+                                continue
+
+                    if che=='che':
+                                will_add_wire_groups=[checking_list[ivalue]['groups'][kdx][0],checking_list[ivalue]['groups'][kdx][1]]
+                                will_delete_group.append(checking_list[ivalue]['groups'][kdx])
+                                will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
+                                will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
+                                break
+
+            previous_wire_counts=len(checking_list[ivalue]['wires'])
+
+    
+    group_assign=dict()
+    for ivalue in sum_assign:
+        group_assign.update({ivalue:list()})
+        for tdx in range(len(sum_assign[ivalue])):
+            group_assign[ivalue].append([])
+
+    for ivalue in assign_temp:
+        for kvalue in sum_assign:
+            for tdx in range(len(sum_assign[kvalue])):
+                if ivalue.split(ivalue.split('/')[-1])[0]==kvalue and ivalue.split('/')[-1].split('_assign_')[0].split('assign_')[1] in sum_assign[kvalue][tdx] \
+                    and ivalue.split('/')[-1].split('_assign_')[1].split(' ')[0] in sum_assign[kvalue][tdx]:
+                    group_assign[kvalue][tdx].append(assign_temp[ivalue])
+
+    net_group_assign=dict()
+    for ivalue in group_assign:
+        net_group_assign.update({ivalue:dict()})
+
+        temp_number=int()
+        for tdx in range(len(group_assign[ivalue])):
+            name_of_assign='assign_group_'+str(temp_number)
+            temp_number=temp_number+1
+            
+            for kdx in range(len(group_assign[ivalue][tdx])):
+                if '/' not in group_assign[ivalue][tdx][kdx]:
+                    name_of_assign=group_assign[ivalue][tdx][kdx]
+                    temp_number=temp_number-1
+            net_group_assign[ivalue].update({name_of_assign:[]})
+
+            for kdx in range(len(group_assign[ivalue][tdx])):
+                for rvalue in net_group[group_assign[ivalue][tdx][kdx]]:
+                    if rvalue not in net_group_assign[ivalue][name_of_assign]:
+                        net_group_assign[ivalue][name_of_assign].append(rvalue)
+
+    will_add_net=dict()
+    for ivalue in net_group_assign:
+        for kvalue in net_group_assign[ivalue]:
+            if kvalue.startswith('assign_group_'):
+                will_add_net.update({ivalue+kvalue:net_group_assign[ivalue][kvalue]})
+            else:
+                will_add_net.update({kvalue:net_group_assign[ivalue][kvalue]})
+
+    for ivalue in will_add_net:
+        will_del_list=list()
+        for kvalue in will_add_net[ivalue]:
+            if kvalue.split('/')[-1].split(' ')[1]=='A' and kvalue.split('/')[-1].startswith('assign_') and '_assign_' in kvalue.split('/')[-1]:
+                will_del_list.append(kvalue)
+        for kvalue in will_del_list:
+            will_add_net[ivalue].remove(kvalue)
+    
+    for ivalue in group_assign:
+        for kdx in range(len(group_assign[ivalue])):
+            for tdx in range(len(group_assign[ivalue][kdx])):
+                del net_group[group_assign[ivalue][kdx][tdx]]
+
+    net_group.update(will_add_net)
+
     
 
-    print(len(components_list_with_ports))
-    print(len(only_components))
-    print()
+########################################################################################################################################################################## checking 영역
+
 
     checking_net_components=list()
     checking_only_components=dict()
     for ivalue in net_group:
         for kvalue in net_group[ivalue]:
-            checking_net_components.append(kvalue)
 
-            checking_only_components.update({kvalue.split(' ')[0]:[]})
-    checking_only_components=list(checking_only_components.keys())
+            checking_net_components.append(kvalue)
+            checking_only_components.update({kvalue.split(' ')[0]:str('tpmglwns1!@!@')})
 
     print(len(checking_net_components))
     print(len(checking_only_components))
+    print()
 
+    with open('../data/'+diff+'/'+'checking_net_components.json','w') as fw:
+        json.dump(checking_net_components,fw,indent=4)
+    fw.close()
+    with open('../data/'+diff+'/'+'components_list_with_ports.json','w') as fw:
+        json.dump(components_list_with_ports,fw,indent=4)
+    fw.close()
 
-    '''for idx in range(len(checking_net_components)):
-        #print(idx,checking_net_components[idx])
-        components_list_with_ports.remove(checking_net_components[idx])
-    print('\n\n######################################################\n\n')
-    print(components_list_with_ports)
-    print(len(components_list_with_ports))'''
-    #for ivalue in checking_net_components:
-    #    print(ivalue)
 
     for ivalue in net_group:
-        if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
-            net_group[ivalue].append('PIN '+ivalue)
-
-        '''if len(net_group[ivalue])==1:
-            if '/' not in ivalue:
-                if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
-                    continue
-                else:
-                    print(ivalue,net_group[ivalue],'TTTTT')
+        for kvalue in net_group[ivalue]:
+            if '/' in kvalue:
+                checking_only_components[kvalue.split(' ')[0]]=temp_all_tree[kvalue.split('/'+kvalue.split('/')[-1])[0]]['info'][kvalue.split('/')[-1].split(' ')[0]]['id']
             else:
-                print(ivalue,net_group[ivalue])'''
+                checking_only_components[kvalue.split(' ')[0]]=All[top_module][kvalue.split('/')[-1].split(' ')[0]]['id']
+                
+        if ivalue in All[top_module]['input']:
+            net_group[ivalue].append('PIN '+ivalue)
+            checking_only_components.update({'PIN '+ivalue:'external_input_PIN'})
+        elif ivalue in All[top_module]['output']:
+            net_group[ivalue].append('PIN '+ivalue)
+            checking_only_components.update({'PIN '+ivalue:'external_output_PIN'})
 
-    print()
+    with open('../data/'+diff+'/'+'checking_id_components.json','w') as fw:
+        json.dump(checking_only_components,fw,indent=4)
+    fw.close()
+
+
+        #if len(net_group[ivalue])==1:
+        #    if '/' not in ivalue:
+        #        if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
+        #            continue
+        #        else:
+        #            print(ivalue,net_group[ivalue],'TTTTT')
+        #    else:
+        #        print(ivalue,net_group[ivalue])
+
+
     print(len(net_group))
+    print()
     new_net_group=dict()
     for ivalue in net_group:
         conseq=str()
@@ -781,30 +1119,30 @@ def get_tree(All):
                 result=kvalue
             new_net_group[conseq].append(result)
 
-            #print(conseq)
-        
+    return net_group
 
-
-
-
-    return new_net_group
 
 
 
 
 if __name__=="__main__":
-    
-    if sys.argv[1]==str(0):
-        kkk=get_module_dict('../data/easy/easy.v')
-        with open('temp_temp.pickle','wb') as fw:
-            pickle.dump(kkk,fw)
-        fw.close()
+    #get_tree(str())
 
-    elif sys.argv[1]==str(1):
-        with open('temp_temp.pickle','rb') as fw:
-            kkk=pickle.load(fw)
-        fw.close()
-        mmm=get_tree(kkk)
-        with open('temp_module_nets.json','w') as fw:
-            json.dump(mmm,fw,indent=4)
-        fw.close()
+
+    difficulty='easy'
+    #difficulty='easy'
+    file='../data/'+difficulty+'/'+difficulty+'.v'
+    #file='../data/easy/easy.v'
+    start=time.time()
+
+    kkk=get_module_dict(file)
+
+    mmm=get_tree(kkk,difficulty)
+
+    print('############')
+    print(time.time()-start)
+    with open('../data/'+difficulty+'/'+'nets_from_june.json','w') as fw:
+        json.dump(mmm,fw,indent=4)
+    fw.close()
+
+

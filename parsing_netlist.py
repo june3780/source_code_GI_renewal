@@ -1129,7 +1129,7 @@ if __name__=="__main__":
     #get_tree(str())
 
 
-    difficulty='easy'
+    difficulty='medium' ##################### difficulty 는 easy 와 medium 두가지 경우가 있다.
     #difficulty='easy'
     file='../data/'+difficulty+'/'+difficulty+'.v'
     #file='../data/easy/easy.v'

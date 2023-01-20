@@ -1,0 +1,97 @@
+combinational cell인 경우
+if 'cell_footprint : "invd1"' in ivalue.replace('\n','') or 'cell_footprint : "oai211d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "nd3d1"' in ivalue.replace('\n','') or 'cell_footprint : "xor2d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "buffd1"' in ivalue.replace('\n','') or 'cell_footprint : "xnr3d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "nd2d1"' in ivalue.replace('\n','') or 'cell_footprint : "an2d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oa31d1"' in ivalue.replace('\n','') or 'cell_footprint : "nr2d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "aoi21d1"' in ivalue.replace('\n','') or 'cell_footprint : "ao32d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ao222d1"' in ivalue.replace('\n','') or 'cell_footprint : "inr3d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oai22d1"' in ivalue.replace('\n','') or 'cell_footprint : "aoi31d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "nr3d1"' in ivalue.replace('\n','') or 'cell_footprint : "mux2nd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "aoi221d1"' in ivalue.replace('\n','') or 'cell_footprint : "xor3d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "fcsicind1"' in ivalue.replace('\n','') or 'cell_footprint : "oai21d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ao22d1"' in ivalue.replace('\n','') or 'cell_footprint : "ao31d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "aoi222d1"' in ivalue.replace('\n','') or 'cell_footprint : "oa22d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ind2d1"' in ivalue.replace('\n','') or 'cell_footprint : "mux2d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ckan2d1"' in ivalue.replace('\n','') or 'cell_footprint : "ao211d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "mux4d1"' in ivalue.replace('\n','') or 'cell_footprint : "oai221d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oai222d1"' in ivalue.replace('\n','') or 'cell_footprint : "ckbd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "maoi22d1"' in ivalue.replace('\n','') or 'cell_footprint : "ind4d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "nr4d1"' in ivalue.replace('\n','') or 'cell_footprint : "an3d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "buftd1"' in ivalue.replace('\n','') or 'cell_footprint : "xnr4d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "xnr2d1"' in ivalue.replace('\n','') or 'cell_footprint : "del1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "iao22d1"' in ivalue.replace('\n','') or 'cell_footprint : "xnr2d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oai31d1"' in ivalue.replace('\n','') or 'cell_footprint : "xnr2d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "or4d1"' in ivalue.replace('\n','') or 'cell_footprint : "ficind1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "fcicind1"' in ivalue.replace('\n','') or 'cell_footprint : "ao221d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oa21d1"' in ivalue.replace('\n','') or 'cell_footprint : "nd4d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oai32d1"' in ivalue.replace('\n','') or 'cell_footprint : "aoi22d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "aoi22d1"' in ivalue.replace('\n','') or 'cell_footprint : "oa211d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "hcoscind1"' in ivalue.replace('\n','') or 'cell_footprint : "aoi211d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "cmpe42d1"' in ivalue.replace('\n','') or 'cell_footprint : "or3d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "hicond1"' in ivalue.replace('\n','') or 'cell_footprint : "iao21d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "aoi33d1"' in ivalue.replace('\n','') or 'cell_footprint : "mux3d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "or2d1"' in ivalue.replace('\n','') or 'cell_footprint : "ind3d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "cknd1"' in ivalue.replace('\n','') or 'cell_footprint : "inr4d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oa221d1"' in ivalue.replace('\n','') or 'cell_footprint : "fcsicond1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ckmux2d1"' in ivalue.replace('\n','') or 'cell_footprint : "ha1d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "iind4d1"' in ivalue.replace('\n','') or 'cell_footprint : "oai33d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "oa33d1"' in ivalue.replace('\n','') or 'cell_footprint : "oa32d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "an4d1"' in ivalue.replace('\n','') or 'cell_footprint : "inr2d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "xor4d1"' in ivalue.replace('\n','') or 'cell_footprint : "bencd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "mux4nd1"' in ivalue.replace('\n','') or 'cell_footprint : "maoi222d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "aoi32d1"' in ivalue.replace('\n','') or 'cell_footprint : "ioa21d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ckxor2d1"' in ivalue.replace('\n','') or 'cell_footprint : "TIEH"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "hcoscond1"' in ivalue.replace('\n','') or 'cell_footprint : "oa222d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "cknd2d1"' in ivalue.replace('\n','') or 'cell_footprint : "moai22d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "bmld1"' in ivalue.replace('\n','') or 'cell_footprint : "fiicond1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "TIEL"' in ivalue.replace('\n','') or 'cell_footprint : "mux3nd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ao21d1"' in ivalue.replace('\n','') or 'cell_footprint : "fa1d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "hicind1"' in ivalue.replace('\n','') or 'cell_footprint : "ioa22d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "iinr4d1"' in ivalue.replace('\n','') or 'cell_footprint : "ao33d1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "ficond1"' in ivalue.replace('\n','') or 'cell_footprint : "fcicond1"' in ivalue.replace('\n','') \
+
+
+
+CLK과 동기화 되는 경우
+elif 'cell_footprint : "sdfksnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfcnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfqd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfkcnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sdfqnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sedfcnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sedfd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "cklhqd1"' in ivalue.replace('\n','') or 'cell_footprint : "sedfqnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lncsnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfcnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sdfksnd1"' in ivalue.replace('\n','') or 'cell_footprint : "lnsnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "cklnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfkcnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sdfxqd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfcsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sdfsnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfmd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfsnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfxqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfcnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfsnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfkcsnd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfksnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "edfd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfnsnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfcsnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfnd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfncnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfd1"' in ivalue.replace('\n','') or 'cell_footprint : "lhsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfkcnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lhqd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfnsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sedfkcnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "sedfqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sdfnd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfcnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lnsnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfcsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "dfmd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfkcnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lhcsnd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sdfcnqnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfkcsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sedfkcnd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfncsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "sdfncnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfncsnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lhcnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "sedfcnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "edfcnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "lncnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "edfkcnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "lnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lhd1"' in ivalue.replace('\n','') or 'cell_footprint : "lhcsnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lncnqd1"' in ivalue.replace('\n','') or 'cell_footprint : "dfcsnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "edfqd1"' in ivalue.replace('\n','') or 'cell_footprint : "edfcnd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lhcnd1"' in ivalue.replace('\n','') or 'cell_footprint : "lhsnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "lncsnd1"' in ivalue.replace('\n','') or 'cell_footprint : "sdfkcsnqd1"' in ivalue.replace('\n','') \
+    or 'cell_footprint : "edfkcnd1"' in ivalue.replace('\n',''):
+
+
+
+
+cell_footprint가 없는 경우

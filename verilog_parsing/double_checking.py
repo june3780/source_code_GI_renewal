@@ -1,5 +1,5 @@
 import json
-
+import sys
 
 
 
@@ -80,6 +80,7 @@ def compare_1(first,second):
 
 if __name__=="__main__":
     diff='easy'
+    diff=sys.argv[1]
     All=compare_1('../../data/'+diff+'/net_list_'+diff+'.json','../../data/'+diff+'/nets_modified_by_june.json')
     with open('not_included.json','w') as fw:
         json.dump(All,fw,indent=4)

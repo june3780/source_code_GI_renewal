@@ -1,6 +1,7 @@
 import json
 import copy
 import time
+import sys
 
 def get_module_dict(wherethemodule): #verilog file parsing
     # macro_list: 해당 verilog에 사용되는 macro id들의 집합
@@ -1138,6 +1139,34 @@ def get_tree(All,diff):
     fw.close()
 
 
+    checking_id_components_modified=dict()
+    for ivalue in checking_only_components:
+        if ivalue.startswith('PIN '):
+            checking_id_components_modified.update({ivalue:checking_only_components[ivalue]})
+        else:
+            temp_components=ivalue.split('/')[-1]
+            if  '/' in ivalue:
+                templist=temp_module=ivalue.split('/'+temp_components)[0].split('/')
+                temp_module=str()
+                for kdx in range(len(templist)):
+                    if kdx==0:
+                        temp_module=All[top_module][templist[kdx]]['id']
+                    else:
+                        temp_module=All[temp_module][templist[kdx]]['id']
+                checking_id_components_modified.update({temp_module+'/'+temp_components:checking_only_components[ivalue]})
+            else:
+                checking_id_components_modified.update({top_module+'/'+temp_components:checking_only_components[ivalue]})
+
+    with open('../../data/'+diff+'/'+'checking_id_components_modified.json','w') as fw:
+        json.dump(checking_id_components_modified,fw,indent=4)
+    fw.close()
+
+
+    for ivalue in real_net_group:
+        if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
+            if 'PIN '+ivalue not in real_net_group[ivalue]:
+                real_net_group[ivalue].append('PIN '+ivalue)
+
         #if len(net_group[ivalue])==1:
         #    if '/' not in ivalue:
         #        if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
@@ -1242,6 +1271,7 @@ if __name__=="__main__":
 
     difficulty='medium' ##################### difficulty 는 easy 와 medium 두가지 경우가 있다.
     difficulty='easy'
+    difficulty=sys.argv[1]
     file='../../data/'+difficulty+'/'+difficulty+'.v'
     #file='../../data/easy/easy.v'
     start=time.time()

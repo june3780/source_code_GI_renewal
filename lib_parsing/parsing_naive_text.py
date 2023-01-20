@@ -8,6 +8,8 @@ def get_naive_txt(libb,checking):
     check=str()
     if checking=='pin':
         check='pin('
+    elif checking=='dynamic_current':
+        check='dynamic_current ('
 
     for idx in range(len(list_of_cell)):
         
@@ -33,19 +35,55 @@ def get_naive_txt(libb,checking):
 
         for kdx in range(len(lines)):
             if lines[kdx].strip().startswith(check):
-                print(lines[kdx])
+                start_lines.append(kdx)
+                end_lines.append(counting_function(kdx,lines))
+        
+
+        for kdx in range(len(start_lines)):
+            #for jdx in range(end_lines[kdx]-start_lines[kdx]):
+
+            checking_number=start_lines[kdx]
+            with open(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/'+checking+'/case_'+str(kdx)+'.txt','w') as fw:
+                fw.write(lines[checking_number]+'\n')
+            fw.close()
+
+            while checking_number!=end_lines[kdx]:
+                checking_number=checking_number+1
+                with open(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/'+checking+'/case_'+str(kdx)+'.txt','a') as fw:
+                    fw.write(lines[checking_number]+'\n')
+                fw.close()
+
                 
 
         print(list_of_cell[idx])
         print()
 
 
-        if idx==0:
-            break
-
     return 0
 
 
+
+
+
+
+def counting_function(start_number,lines):
+    left=int()
+    right=int()
+    if  '{' in lines[start_number]:
+        left=left+1
+    if  '}' in lines[start_number]:
+        right=right+1
+
+    for idx in range(len(lines)-start_number-1):
+        if '{' in lines[start_number+idx+1]:
+            left=left+1
+        if '}' in lines[start_number+idx+1]:
+            right=right+1
+        if left==right:
+            return start_number+idx+1
+
+
+            
 
 def get_info_txt(libb):
     list_break=[]
@@ -104,16 +142,16 @@ def get_info_txt(libb):
                 break
     print()
     print(len(listcomponents))
-
+    
     return 0
 
 
 if __name__=="__main__":
 
-    lib='../../data/20221219/LIB/tcbn40lpbwp12tm1ptc_ccs.lib'
+    lib='../../data/20221219/LIB/tcbn40lpbwp12tm1plvttc_ccs.lib'
     
-    target='pin'##################################################### dynamic_current, pin, leakage_power, leakage_current_intrinsic_parasitic, pg_pin, test_cell, statetable, ff, latch
-    target='info'##################################################### info (info.txt)
+    target='dynamic_current'##################################################### dynamic_current, pin, leakage_power, leakage_current_intrinsic_parasitic, pg_pin, test_cell, statetable, ff, latch
+    #target='info'##################################################### info (info.txt)
     if target!='info':
         get_naive_txt(lib,target)
     else:

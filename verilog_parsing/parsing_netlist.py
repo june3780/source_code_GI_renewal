@@ -1,44 +1,72 @@
 import json
 import copy
 import time
-def get_module_dict(wherethemodule):
+
+def get_module_dict(wherethemodule): #verilog file parsing
+    # macro_list: 해당 verilog에 사용되는 macro id들의 집합
     macro_list=['spsram_hd_256x23m4m','spsram_hd_2048x32m4s','spsram_hd_256x22m4m','sprf_hs_128x38m2s'\
     ,'TS1N40LPB1024X32M4FWBA','TS1N40LPB2048X36M4FWBA','TS1N40LPB256X23M4FWBA','TS1N40LPB128X63M4FWBA'\
     ,'TS1N40LPB256X12M4FWBA','TS1N40LPB512X23M4FWBA','TS1N40LPB1024X128M4FWBA','TS1N40LPB2048X32M4FWBA'\
     ,'TS1N40LPB256X22M4FWBA']
-    assign_dict=dict()
+
+
+
+    # verilog 파일 읽기
     with open(wherethemodule,'r') as fw:
         module_str=fw.readlines()
     fw.close()
 
+
+
+    # 'module-endmodule'을 기준으로 module_list 각 module의 문장들을 합쳐서 저장
     module_list=['']
     for ivalue in module_str:
+        # verilog 파일에서의 주석처리
+        if ivalue.strip().startswith('//'):
+            continue
+        # module_list의 마지막 인덱스에 module의 문장을 붙여서 최신화
         if module_list[-1]=='':
             module_list[-1]=ivalue.strip()
         else:
             module_list[-1]=module_list[-1]+' '+ivalue.strip()
+        # endmodule이 나올 경우, module_list에 새로운 인덱스 추가
         if ivalue.replace('\n','').strip().endswith('endmodule'):
             module_list.append('')
+    # 마지막 module의 endmodule에 의한 아무 내용 없는 인덱스 제거
     del module_list[-1]
 
+
+    cc=int()
+    # module_list의 각 module을 parsing하여 module_dict에 각 module의 내용 저장, assign에 대한 내용을 assign_dict에 저장
     module_dict=dict()
+    assign_dict=dict()
+    # 각 module에 접근 module_list에는 module에 대한 내용이 하나의 문장으로 합쳐져 있는 상태
     for ivalue in module_list:
+        cc=cc+1
         module_name=str()
+        # 각 module들의 문장을 ';'을 기준으로 나눠서 temp_str에 각 문장들을 저장
         temp_str=ivalue.split(';')
         for kvalue in temp_str:
+            # 각 문장들의 첫 단어들을 통해 분류하여 module 내용을 저장, 현재 함수가 처리한 첫 단어들의 경우 : [module, input, output, wire, assign, endmodule]
+            # 나머지의 경우들을 components_cell 혹은 macro, 또는 submodule로 간주한다.
+
+            # 첫 단어가 module인 경우: module_dict에 module의 id를 추가
             if kvalue.strip().startswith('module '):
                 module_name=kvalue.split(' ')[1]
                 module_dict.update({module_name:{}})
+
+            # 첫 단어가 input인 경우: 해당 module에 input 이라는 key를 추가, input에 해당 net을 추가, multi-input을 가질경우 각 요소들을 나눠 input에 해당 net들을 추가
             elif kvalue.strip().startswith('input '):
                 if 'input' not in module_dict[module_name]:
                     module_dict[module_name].update(({'input':[]}))
+                # multi-input일 경우
                 if '[' in kvalue:
                     small_idx=int(kvalue.split(']')[0].split(':')[1])
                     large_idx=int(kvalue.split(']')[0].split(':')[0].split('[')[1])
+                    # 정의된 net이 여러 개인 경우
                     if ',' in kvalue:
-
                         temp_list=kvalue.split('] ')[1].replace(';','').strip().split(', ')
-
+                        # multi에 정의된 두 숫자의 3가지 경우에 따라 input에 추가하는 순서가 다르다. : 앞의 숫자가 더 큰 경우, 뒤의 숫자가 더 큰 경우, 두 숫자가 같은 경우
                         if large_idx>small_idx:
                             for jvalue in temp_list:
                                 for tdx in range(large_idx-small_idx+1):
@@ -49,10 +77,10 @@ def get_module_dict(wherethemodule):
                                     module_dict[module_name]['input'].append(jvalue+'['+str(large_idx+tdx)+']')
                         else:
                             module_dict[module_name]['input'].append(jvalue+'['+str(large_idx)+']')
-
+                    # 정의된 net이 하나인 경우
                     else:
                         jvalue=kvalue.split('] ')[1].replace(';','').strip()
-
+                        # multi에 정의된 두 숫자의 3가지 경우에 따라 input에 추가하는 순서가 다르다. : 앞의 숫자가 더 큰 경우, 뒤의 숫자가 더 큰 경우, 두 숫자가 같은 경우
                         if large_idx>small_idx:
                             for tdx in range(large_idx-small_idx+1):
                                 module_dict[module_name]['input'].append(jvalue+'['+str(large_idx-tdx)+']')
@@ -62,27 +90,30 @@ def get_module_dict(wherethemodule):
                                 module_dict[module_name]['input'].append(jvalue+'['+str(large_idx+tdx)+']')
                         else:
                             module_dict[module_name]['input'].append(jvalue+'['+str(large_idx)+']')
-
+                # multi-input이 아닌 경우(단일 비트의 input)
                 else:
+                    # 정의된 net이 여러 개인 경우
                     if ',' in kvalue:
                         temp_list=kvalue.split('input ')[1].replace(';','').strip().split(', ')
                         for jvalue in temp_list:
                             module_dict[module_name]['input'].append(jvalue)
+                    # 정의된 net이 하나인 경우
                     else:
                         jvalue=kvalue.split('input ')[1].replace(';','').strip()
                         module_dict[module_name]['input'].append(jvalue)
 
+            # 첫 단어가 output인 경우: 해당 module에 output 이라는 key를 추가, output에 해당 net을 추가, multi-output을 가질경우 각 요소들을 나눠 output에 해당 net들을 추가
             elif kvalue.strip().startswith('output '):
                 if 'output' not in module_dict[module_name]:
                     module_dict[module_name].update(({'output':[]}))
-                
+                # multi-output일 경우
                 if '[' in kvalue:
                     small_idx=int(kvalue.split(']')[0].split(':')[1])
                     large_idx=int(kvalue.split(']')[0].split(':')[0].split('[')[1])
-
+                    # 정의된 net이 여러 개인 경우
                     if ',' in kvalue:
                         temp_list=kvalue.split('] ')[1].replace(';','').strip().split(', ')
-                        
+                        # multi에 정의된 두 숫자의 3가지 경우에 따라 output에 추가하는 순서가 다르다. : 앞의 숫자가 더 큰 경우, 뒤의 숫자가 더 큰 경우, 두 숫자가 같은 경우
                         if large_idx>small_idx:
                             for jvalue in temp_list:
                                 for tdx in range(large_idx-small_idx+1):
@@ -93,9 +124,10 @@ def get_module_dict(wherethemodule):
                                     module_dict[module_name]['output'].append(jvalue+'['+str(large_idx+tdx)+']')
                         else:
                             module_dict[module_name]['output'].append(jvalue+'['+str(large_idx)+']')
-
+                    # 정의된 net이 하나인 경우
                     else:
                         jvalue=kvalue.split('] ')[1].replace(';','').strip()
+                        # multi에 정의된 두 숫자의 3가지 경우에 따라 output에 추가하는 순서가 다르다. : 앞의 숫자가 더 큰 경우, 뒤의 숫자가 더 큰 경우, 두 숫자가 같은 경우
                         if large_idx>small_idx:
                             for tdx in range(large_idx-small_idx+1):
                                 module_dict[module_name]['output'].append(jvalue+'['+str(large_idx-tdx)+']')
@@ -104,28 +136,30 @@ def get_module_dict(wherethemodule):
                                 module_dict[module_name]['output'].append(jvalue+'['+str(large_idx+tdx)+']')
                         else:
                             module_dict[module_name]['output'].append(jvalue+'['+str(large_idx)+']')
+                # multi-output이 아닌 경우(단일 비트의 output)
                 else:
-
+                    # 정의된 net이 여러 개인 경우
                     if ',' in kvalue:
                         temp_list=kvalue.split('output ')[1].replace(';','').strip().split(', ')
                         for jvalue in temp_list:
                             module_dict[module_name]['output'].append(jvalue)
+                    # 정의된 net이 하나인 경우
                     else:
                         jvalue=kvalue.split('output ')[1].replace(';','').strip()
                         module_dict[module_name]['output'].append(jvalue)
 
+            # 첫 단어가 wire인 경우: 해당 module에 wire 이라는 key를 추가, wire에 해당 net을 추가, multi-wire을 가질경우 각 요소들을 나눠 wire에 해당 net들을 추가
             elif kvalue.strip().startswith('wire '):
-
                 if 'wire' not in module_dict[module_name]:
                     module_dict[module_name].update(({'wire':[]}))
-                
+                # multi-wire일 경우
                 if '[' in kvalue:
                     small_idx=int(kvalue.split(']')[0].split(':')[1])
                     large_idx=int(kvalue.split(']')[0].split(':')[0].split('[')[1])
-
+                    # 정의된 net이 여러 개인 경우
                     if ',' in kvalue:
                         temp_list=kvalue.split('] ')[1].replace(';','').strip().split(', ')
-                        
+                        # multi에 정의된 두 숫자의 3가지 경우에 따라 wire에 추가하는 순서가 다르다. : 앞의 숫자가 더 큰 경우, 뒤의 숫자가 더 큰 경우, 두 숫자가 같은 경우
                         if large_idx>small_idx:
                             for jvalue in temp_list:
                                 for tdx in range(large_idx-small_idx+1):
@@ -136,9 +170,10 @@ def get_module_dict(wherethemodule):
                                     module_dict[module_name]['wire'].append(jvalue+'['+str(large_idx+tdx)+']')
                         else:
                             module_dict[module_name]['wire'].append(jvalue+'['+str(large_idx)+']')
-
+                    # 정의된 net이 하나인 경우
                     else:
                         jvalue=kvalue.split('] ')[1].replace(';','').strip()
+                        # multi에 정의된 두 숫자의 3가지 경우에 따라 wire에 추가하는 순서가 다르다. : 앞의 숫자가 더 큰 경우, 뒤의 숫자가 더 큰 경우, 두 숫자가 같은 경우
                         if large_idx>small_idx:
                             for tdx in range(large_idx-small_idx+1):
                                 module_dict[module_name]['wire'].append(jvalue+'['+str(large_idx-tdx)+']')
@@ -147,78 +182,102 @@ def get_module_dict(wherethemodule):
                                 module_dict[module_name]['wire'].append(jvalue+'['+str(large_idx+tdx)+']')
                         else:
                             module_dict[module_name]['wire'].append(jvalue+'['+str(large_idx)+']')
+                # multi-wire이 아닌 경우(단일 비트의 wire)
                 else:
-
+                    # 정의된 net이 여러 개인 경우
                     if ',' in kvalue:
                         temp_list=kvalue.split('wire ')[1].replace(';','').strip().split(', ')
                         for jvalue in temp_list:
                             module_dict[module_name]['wire'].append(jvalue)
+                    # 정의된 net이 하나인 경우
                     else:
                         jvalue=kvalue.split('wire ')[1].replace(';','').strip()
                         module_dict[module_name]['wire'].append(jvalue)
 
+            # 첫 단어가 assign인 경우: 해당 module을 assign_dict에 추가하고, assign A=B;를 {A:B}라는 딕셔너리로 바꾼 후 해당 module에 추가
             elif kvalue.strip().startswith('assign '):
-
-                temp_output=kvalue.split('assign')[1].split('=')[0].strip()
-                temp_value=kvalue.split('assign')[1].split('=')[1].strip()
+                # 해당 moudule을 assign_dict에 추가
                 if module_name not in assign_dict:
                     assign_dict.update({module_name:dict()})
+                # temp_output: A에 해당하는 net
+                temp_output=kvalue.split('assign')[1].split('=')[0].strip()
+                # temp_value: B에 해당하는 net
+                temp_value=kvalue.split('assign')[1].split('=')[1].strip()
                 assign_dict[module_name].update({temp_output:temp_value})
 
+            # 첫 단어가 module인 경우: 다음 인덱스로 넘어간다.
             elif kvalue.strip().startswith('endmodule'):
                 continue
-            else:
-                component_or_module=kvalue.strip().split(' ')[0].strip()
-                list_of_line=' '.join(kvalue.strip().split(' ')[2:])
-                module_dict[module_name].update({kvalue.strip().split(' ')[1].strip():{'id':component_or_module}})
-                module_dict[module_name][kvalue.strip().split(' ')[1].strip()].update({'ports':{}})
 
+            # 첫 단어가 처리되는 단어에 포함되지 않을 경우, standard_cell 혹은 macro나 submodule로 간주한다.
+            else:
+                # component_or_module: standard_cell 혹은 macro나 submodule
+                component_or_module=kvalue.strip().split(' ')[0].strip()
+                # list_of_line: 해당 component_or_module이 가지는 port와 그에 연결된 net
+                list_of_line=' '.join(kvalue.strip().split(' ')[2:])
+                # module_dict에 해당 module에 component_or_module 추가 (해당 component_or_module의 이름을 저장한다, 'id'에 standard_cell이나 macro의 'id' 혹은 submodule의 module의 'id'로 추가)
+                module_dict[module_name].update({kvalue.strip().split(' ')[1].strip():{'id':component_or_module}})
+                # 해당 component_or_module에 대한 port와 그에 연결된 net 추가
+                module_dict[module_name][kvalue.strip().split(' ')[1].strip()].update({'ports':{}})
                 for tvalue in list_of_line.split('.'):
                     if '(' not in tvalue or ')' not in tvalue:
                         continue
                     module_dict[module_name][kvalue.strip().split(' ')[1].strip()]['ports'].update({tvalue.split('(')[0].strip():tvalue.split('(')[1].strip().split(')')[0].strip()})
 
 
-    used_components_list=dict()
-
+    top_module=str()
+    # 모든 module의 id를 module_list에 저장
+    module_list=list(module_dict.keys())
+    # 각 module에 추가한 standard_cell 혹은 macro나 submodule인 요소들을 components_counts에 standard_cell과 macro들을, module_counts에 submodule을 저장하여 해당 module에 추가
     for ivalue in module_dict:
+        # 각 module에 components_counts와 module_counts 추가
         module_dict[ivalue].update({'components_counts':{}})
         module_dict[ivalue].update({'module_counts':{}})
-
+        # 각 module마다 components_counts와 module_counts로 나누기
         for kvalue in module_dict[ivalue]:
+            # module의 standard_cell 혹은 macro나 submodule인 요소들만 접근
             if kvalue!='input' and kvalue!='output' and kvalue!='wire' and kvalue!='components_counts' and kvalue!='module_counts':
-
+                # 해당 요소의 id가 module_dict에 선언된 module에 포함이 안될 경우
                 if module_dict[ivalue][kvalue]['id'] not in module_dict:
                     module_dict[ivalue]['components_counts'].update({kvalue:module_dict[ivalue][kvalue]['id']})
-                    if module_dict[ivalue][kvalue]['id'] not in used_components_list:
-                        used_components_list.update({module_dict[ivalue][kvalue]['id']:int()})
-                    used_components_list[module_dict[ivalue][kvalue]['id']]=used_components_list[module_dict[ivalue][kvalue]['id']]+1
-
+                # 해당 요소의 id가 module_dict에 선언된 module 중 하나일 경우
                 else:
                     module_dict[ivalue]['module_counts'].update({kvalue:module_dict[ivalue][kvalue]['id']})
+                    # top_module을 찾기 위해 안쓰인 module을 제외한 module들을 module_list에서 제거한다.
+                    if module_dict[ivalue][kvalue]['id'] in module_list:
+                        module_list.remove(module_dict[ivalue][kvalue]['id'])
+    # 한번도 submodule로 쓰인 적 없는 module이 top_module이다.
+    top_module=module_list[0]
+    print(top_module)
 
     
-
+    # assign이 있는 module에 예외 처리
     for ivalue in assign_dict:
+        # {A:B}인 딕셔너리가 assign_dict[ivalue]에 있다. ex) kvalue: A, assign_dict[kvalue]: B
         for kvalue in assign_dict[ivalue]:
-
+            # assign에 의해 wire와 input, 혹은 wire와 output에 동시에 정의된 net의 wire를 지워준다.
             if kvalue in module_dict[ivalue]['wire']:
                 module_dict[ivalue]['wire'].remove(kvalue)
-
             if assign_dict[ivalue][kvalue] in module_dict[ivalue]['wire']:
                 module_dict[ivalue]['wire'].remove(assign_dict[ivalue][kvalue])
-
+            # assign을 가지는 특수한 module을 submodule로 갖는 module 탐색
             for rvalue in module_dict:
                 for tvalue in module_dict[rvalue]['module_counts']:
+                    # rvalue: assign을 가지는 module을 submodule로 가지는 module
+                    # tvalue: rvalue 의 submodule 중 하나로 assign을 가지는 module
                     if ivalue==module_dict[rvalue]['module_counts'][tvalue]:
+                        # assign_A_assign_B 와 assign_B_assign_A 라는 임의의 component를 rvalue인 moudule에 추가해준다.
 
+                        # assign_A_assign_B의 id는 assign_A이다.
+                        # assign_A_assign_B의 port는 'A' 하나이며, submodule의 A에 연결된 net과 같은 net을 assign_A_assign_B의 'A' port에 연결한다.
                         if 'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue] not in module_dict[rvalue]['components_counts']:
                             module_dict[rvalue]['components_counts'].update({'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]:str()})
                         module_dict[rvalue]['components_counts']['assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]]='assign_'+kvalue
                         if 'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue] not in module_dict[rvalue]:
                             module_dict[rvalue].update({'assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]:dict()})
                         module_dict[rvalue]['assign_'+kvalue+'_assign_'+assign_dict[ivalue][kvalue]].update({'id':'assign_'+kvalue,'ports':{'A':module_dict[rvalue][tvalue]['ports'][kvalue]}})
-
+                        # assign_B_assign_A의 id는 assign_B이다.
+                        # assign_B_assign_A의 port는 'A' 하나이며, submodule의 B에 연결된 net과 같은 net을 assign_B_assign_A의 'A' port에 연결한다.
                         if 'assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue not in module_dict[rvalue]['components_counts']:
                             module_dict[rvalue]['components_counts'].update({'assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue:str()})
                         module_dict[rvalue]['components_counts']['assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue]='assign_'+assign_dict[ivalue][kvalue]
@@ -227,47 +286,55 @@ def get_module_dict(wherethemodule):
                         module_dict[rvalue]['assign_'+assign_dict[ivalue][kvalue]+'_assign_'+kvalue].update({'id':'assign_'+assign_dict[ivalue][kvalue],'ports':{'A':module_dict[rvalue][tvalue]['ports'][assign_dict[ivalue][kvalue]]}})
 
 
+
+    # module에 있는 macro와 submodule에 쓰이는 array_port들과 연결된 array_net들을 각 port와 net이 대응하도록 분리
     for ivalue in module_dict:
         array_input=list()
         array_output=list()
         array_wire=list()
+        # 하나의 module의 input들중에 같은 이름을 가지고 인덱스(배열값)만 다른 input들을 array_input에 이름만 저장
         for kvalue in module_dict[ivalue]['input']:
             if '[' in kvalue:
                 if kvalue.split('[')[0] not in array_input:
                     array_input.append(kvalue.split('[')[0])
-        
+        # 하나의 module의 output들중에 같은 이름을 가지고 인덱스(배열값)만 다른 output들을 array_output에 이름만 저장
         for kvalue in module_dict[ivalue]['output']:
             if '[' in kvalue:
                 if kvalue.split('[')[0] not in array_output:
                     array_output.append(kvalue.split('[')[0])
-
+        # 하나의 module의 wire들중에 같은 이름을 가지고 인덱스(배열값)만 다른 wire들을 array_wire에 이름만 저장
         if 'wire' in module_dict[ivalue]:
             for kvalue in module_dict[ivalue]['wire']:
                 if '[' in kvalue:
                     if kvalue.split('[')[0] not in array_wire:
                         array_wire.append(kvalue.split('[')[0])
-
+        # 하나의 macro와 submodule을 탐색
         for kvalue in module_dict[ivalue]:
+
+            # macro 혹은 submodule이 아닌 경우 continue
             if kvalue=='input' or kvalue=='output' or kvalue=='wire' or kvalue=='module_counts' or kvalue=='components_counts':
                 continue
             elif module_dict[ivalue][kvalue]['id'] not in macro_list and kvalue in module_dict[ivalue]['components_counts']:
                 continue
-                
+            
+            # macro 혹은 submodule인 경우
             else:
+                # 각 port별로 array 판별 및 분리
                 temp_ports_list=copy.deepcopy(module_dict[ivalue][kvalue]['ports'])
+                # new_ports_list: port key에 새로 저장할 port 딕셔너리
                 new_ports_list=dict()
                 for tvalue in temp_ports_list:
+                    # '{_}' 결합 연산자로 묶여있지 않는 경우
                     temple_list=list()
-
                     if '{' not in temp_ports_list[tvalue]:
+                        # 기존의 port가 연결된 net이 array_input, array_output, array_wire에 없을 경우: 1. '[number1:number2]'배열의 net 2. 단일 비트인 net
                         if temp_ports_list[tvalue] not in array_input\
                             and temp_ports_list[tvalue] not in array_output\
                             and temp_ports_list[tvalue] not in array_wire:
-
+                            # 1. '[number1:number2]'배열의 net의 경우 => 해당 port에 배열 형태의 net을 분리하여 list 자료형으로 temple_list에 저장
                             if ':' in temp_ports_list[tvalue]:
                                 large_idx=int(temp_ports_list[tvalue].split(']')[0].split(':')[0].split('[')[1])
                                 small_idx=int(temp_ports_list[tvalue].split(']')[0].split(':')[1])
-
                                 if large_idx>small_idx:
                                     for jdx in range(large_idx-small_idx+1):
                                         temple_list.append(temp_ports_list[tvalue].split('[')[0]+'['+str(large_idx-jdx)+']')
@@ -277,74 +344,77 @@ def get_module_dict(wherethemodule):
                                 else:
                                     temple_list.append(temp_ports_list[tvalue].split('[')[0])
                                 temp_ports_list[tvalue]=temple_list
-
+                            # 2. 단일 비트인 net의 경우 => 해당 net을 크기가 1인 list 자료형으로 temple_list에 저장
                             else:
                                 temp_ports_list[tvalue]=[temp_ports_list[tvalue]]
-
+                        # 기존의 port가 연결된 net이 array_input에 있을 경우
                         elif temp_ports_list[tvalue] in array_input:
                             
                             for jvalue in module_dict[ivalue]['input']:
                                 if jvalue.startswith(temp_ports_list[tvalue]+'['):
                                     temple_list.append(jvalue)
                             temp_ports_list[tvalue]=temple_list
-
+                        # 기존의 port가 연결된 net이 array_output에 있을 경우
                         elif temp_ports_list[tvalue] in array_output:
                             for jvalue in module_dict[ivalue]['output']:
                                 if jvalue.startswith(temp_ports_list[tvalue]+'['):
                                     temple_list.append(jvalue)
                             temp_ports_list[tvalue]=temple_list
-
+                        # 기존의 port가 연결된 net이 array_wire에 있을 경우
                         else:
                             if temp_ports_list[tvalue] in array_wire:
                                 for jvalue in module_dict[ivalue]['wire']:
                                     if jvalue.startswith(temp_ports_list[tvalue]+'['):
                                         temple_list.append(jvalue)
                                 temp_ports_list[tvalue]=temple_list
-
+                    # '{_}' 결합 연산자로 묶여있는 경우
                     else:
+                        # '{}'의 안을 ','를 기준으로 쪼개어 just_ports에 list 자료형으로 저장
                         just_ports=temp_ports_list[tvalue].replace('{','').replace('}','').split(', ')
-                        new_temple_list=list()
-
+                        # just_ports에 있는 각 요소들을 판단 : '[]'이 있는 배열의 형태의 net인 경우, array_input 혹은 array_output 혹은 array_wire에 포함된 net인 경우, 단일 비트인 경우
                         for jvalue in just_ports:
                             temp_component=jvalue.strip()
+                            # '[]'이 있는 배열의 형태의 net인 경우
                             if ':' in temp_component:
                                 large_idx=int(temp_component.split(']')[0].split(':')[0].split('[')[1])
                                 small_idx=int(temp_component.split(']')[0].split(':')[1])
                                 if large_idx>small_idx:
                                     for fdx in range(large_idx-small_idx+1):
-                                        new_temple_list.append(temp_component.split('[')[0]+'['+str(large_idx-fdx)+']')
+                                        temple_list.append(temp_component.split('[')[0]+'['+str(large_idx-fdx)+']')
                                 elif small_idx>large_idx:
                                     for fdx in range(small_idx-large_idx+1):
-                                        new_temple_list.append(temp_component.split('[')[0]+'['+str(large_idx+fdx)+']')
-
+                                        temple_list.append(temp_component.split('[')[0]+'['+str(large_idx+fdx)+']')
+                            # array_input에 포함된 net인 경우
                             elif temp_component in array_input:
                                 for fvalue in module_dict[ivalue]['input']:
                                     if fvalue.startswith(temp_component+'['):
-                                        new_temple_list.append(fvalue)
-
+                                        temple_list.append(fvalue)
+                            # array_output에 포함된 net인 경우
                             elif temp_component in array_output:
                                 for fvalue in module_dict[ivalue]['output']:
                                     if fvalue.startswith(temp_component+'['):
-                                        new_temple_list.append(fvalue)
-                            
+                                        temple_list.append(fvalue)
+                            # array_wire에 포함된 net인 경우
                             elif temp_component in array_wire:
                                 for fvalue in module_dict[ivalue]['wire']:
                                     if fvalue.startswith(temp_component+'['):
-                                        new_temple_list.append(fvalue)
+                                        temple_list.append(fvalue)
+                            # 단일 비트인 경우
                             else:
-                                new_temple_list.append(temp_component)
+                                temple_list.append(temp_component)
+                        temp_ports_list[tvalue]=temple_list
 
-                        temp_ports_list[tvalue]=new_temple_list
-
+                    # ivalue가 macro의 경우와 submodule인 경우로 나누어 각 경우마다 정의된 port를 연결된 net들의 group에 일대일 대응이 되도록 port를 쪼갠 후 해당 ivalue의 새로운 port의 정보를 new_ports_list에 저장
+                    # ivalue의 id가 macro인 경우: 함수 macro_ports를 사용
                     if kvalue in module_dict[ivalue]['components_counts']:
                         new_ports_list.update(macro_ports(module_dict[ivalue][kvalue]['id'],tvalue,temp_ports_list[tvalue]))
-
+                    # ivalue의 id가 또다른 module인 경우: 함수 module_ports를 사용
                     else:
                         new_ports_list.update(module_ports(module_dict[ivalue][kvalue]['id'],tvalue,temp_ports_list[tvalue],module_dict))
-
+                # macro와 submodule의 array_port들을 하나씩 분리하여 최신화
                 module_dict[ivalue][kvalue]['ports']=new_ports_list
 
-    
+#################################### 여기서부터 주석 시작
 
     '''print('@#@#@#@###@##@#@#@##@#@#')
     for ivalue in module_dict:
@@ -364,7 +434,7 @@ def get_module_dict(wherethemodule):
                 print(kvalue)
                 print(temp_output[kvalue])
                 print()'''
-    return module_dict
+    return [module_dict,top_module]
 
 
 
@@ -590,18 +660,8 @@ def checking_list_func(All,ivalue,toptop):
 
 
 def get_tree(All,diff):
-    who_is_top=list()
-    for ivalue in All:
-        who_is_top.append(ivalue)
-
-    for ivalue in All:
-        for kvalue in All[ivalue]:
-            if kvalue!='input' and kvalue!='output' and kvalue!='wire' and kvalue!='components_counts' and kvalue!='module_counts':
-                if All[ivalue][kvalue]['id'] in who_is_top:
-                    who_is_top.remove(All[ivalue][kvalue]['id'])
-
-    top_module=who_is_top[0]
-    print(top_module)
+    top_module=All[1]
+    All=All[0]
 
     all_tree=dict()
     treeAll=dict()
@@ -1015,7 +1075,10 @@ def get_tree(All,diff):
             for tdx in range(len(group_assign[ivalue][kdx])):
                 del net_group[group_assign[ivalue][kdx][tdx]]
 
-    net_group.update(will_add_net)
+    real_net_group=copy.deepcopy(net_group)
+    for idx,ivalue in enumerate(will_add_net):
+        net_group.update({'assignModule'+str(idx):will_add_net[ivalue]})
+        real_net_group.update({ivalue:will_add_net[ivalue]})
 
     
 
@@ -1034,10 +1097,10 @@ def get_tree(All,diff):
     print(len(checking_only_components))
     print()
 
-    with open('../data/'+diff+'/'+'checking_net_components.json','w') as fw:
+    with open('../../data/'+diff+'/'+'checking_net_components.json','w') as fw:
         json.dump(checking_net_components,fw,indent=4)
     fw.close()
-    with open('../data/'+diff+'/'+'components_list_with_ports.json','w') as fw:
+    with open('../../data/'+diff+'/'+'components_list_with_ports.json','w') as fw:
         json.dump(components_list_with_ports,fw,indent=4)
     fw.close()
 
@@ -1056,7 +1119,21 @@ def get_tree(All,diff):
             net_group[ivalue].append('PIN '+ivalue)
             checking_only_components.update({'PIN '+ivalue:'external_output_PIN'})
 
-    with open('../data/'+diff+'/'+'checking_id_components.json','w') as fw:
+
+
+    for idx,ivalue in enumerate(will_add_net):
+        if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
+            if 'PIN '+ivalue not in net_group['assignModule'+str(idx)]:
+                net_group['assignModule'+str(idx)].append('PIN '+ivalue)
+            if 'PIN '+ivalue not in real_net_group[ivalue]:
+                real_net_group[ivalue].append('PIN '+ivalue)
+
+            if ivalue in All[top_module]['input']:
+                checking_only_components.update({'PIN '+ivalue:'external_input_PIN'})
+            else:
+                checking_only_components.update({'PIN '+ivalue:'external_output_PIN'})
+
+    with open('../../data/'+diff+'/'+'checking_id_components.json','w') as fw:
         json.dump(checking_only_components,fw,indent=4)
     fw.close()
 
@@ -1096,6 +1173,7 @@ def get_tree(All,diff):
         else:
             conseq=ivalue
         new_net_group.update({conseq:list()})
+
         for kvalue in net_group[ivalue]:
             result=str()
             if '/' in kvalue:
@@ -1119,7 +1197,40 @@ def get_tree(All,diff):
                 result=kvalue
             new_net_group[conseq].append(result)
 
-    return net_group
+
+    jun=dict()
+    for ivalue in new_net_group:
+        if '/' not in ivalue:
+            che=str()
+            for kvalue in new_net_group[ivalue]:
+                if 'PIN ' in kvalue:
+                    che='che'
+                    break
+            if che=='che' and 'assignModule' not in ivalue:
+                jun.update({'PIN '+ivalue:new_net_group[ivalue]})
+            else:
+                if 'assignModule' not in ivalue and ivalue!='constant0' and ivalue!='constant1':
+                    jun.update({top_module+'/'+ivalue:new_net_group[ivalue]})
+                else:
+                    jun.update({ivalue:new_net_group[ivalue]})
+        else:
+            jun.update({ivalue.split('/'+ivalue.split('/')[-1])[0].split('/')[-1]+'/'+ivalue.split('/')[-1]:new_net_group[ivalue]})
+
+    for ivalue in jun:
+        temp=list()
+        for kvalue in jun[ivalue]:
+            if kvalue.startswith('PIN '):
+                temp.append(kvalue)
+            elif '/' not in kvalue:
+                temp.append(top_module+'/'+kvalue)
+            else:
+                last_slash=kvalue.split('/')[-1]
+                previous_slash=kvalue.split('/'+last_slash)[0].split('/')[-1]
+                temp.append(previous_slash+'/'+last_slash)
+        jun[ivalue]=temp
+
+    return [jun,real_net_group]
+    #return net_group
 
 
 
@@ -1130,9 +1241,9 @@ if __name__=="__main__":
 
 
     difficulty='medium' ##################### difficulty 는 easy 와 medium 두가지 경우가 있다.
-    #difficulty='easy'
-    file='../data/'+difficulty+'/'+difficulty+'.v'
-    #file='../data/easy/easy.v'
+    difficulty='easy'
+    file='../../data/'+difficulty+'/'+difficulty+'.v'
+    #file='../../data/easy/easy.v'
     start=time.time()
 
     kkk=get_module_dict(file)
@@ -1140,9 +1251,12 @@ if __name__=="__main__":
     mmm=get_tree(kkk,difficulty)
 
     print('############')
-    print(time.time()-start)
-    with open('../data/'+difficulty+'/'+'nets_from_june.json','w') as fw:
-        json.dump(mmm,fw,indent=4)
+
+    with open('../../data/'+difficulty+'/'+'nets_modified_by_june.json','w') as fw:
+        json.dump(mmm[0],fw,indent=4)
+    fw.close()
+    with open('../../data/'+difficulty+'/'+'nets_from_june.json','w') as fw:
+        json.dump(mmm[1],fw,indent=4)
     fw.close()
 
-
+    print(time.time()-start)

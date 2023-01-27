@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 
 
 def get_naive_txt(libb,checking):
@@ -84,7 +85,6 @@ def counting_function(start_number,lines):
 
 
             
-
 def get_info_txt(libb):
     list_break=[]
     list_of_cell=os.listdir(libb.split('.lib')[0])
@@ -146,13 +146,108 @@ def get_info_txt(libb):
     return 0
 
 
-if __name__=="__main__":
 
-    lib='../../data/20221219/LIB/tcbn40lpbwp12tm1plvttc_ccs.lib'
+
+def get_each_timing(libb):
+    list_of_cell=os.listdir(libb.split('.lib')[0])
+    check=str()
+
+    che='che'
+    for idx in range(len(list_of_cell)):
+        if 'temp_function_groups' in list_of_cell[idx]:
+            continue
+
+        directory_and_info=os.listdir(libb.split('.lib')[0]+'/'+list_of_cell[idx])
+
+        if 'pin' not in directory_and_info:
+            continue
+
+        print(list_of_cell[idx])
+        pins_list=os.listdir(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/pin/')
+        #tt=int()
+        for kdx in range(len(pins_list)):
+            if pins_list[kdx].endswith('.txt'):
+                continue
+            if pins_list[kdx].startswith('output_'):
+                list_of_output_dictionary=os.listdir(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/pin/'+pins_list[kdx])
+                if 'timing.txt' not in list_of_output_dictionary:
+                    continue
+
+                #tt=tt+1
+                
+                with open(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/pin/'+pins_list[kdx]+'/timing.txt','r') as fw:
+                    lines=fw.readlines()
+                fw.close()
+
+                timing_start_idx=list()
+                timing_end_idx=list()
+                for rdx in range(len(lines)):
+                    if lines[rdx].strip().startswith('timing ('):
+                        timing_start_idx.append(rdx)
+                        timing_end_idx.append(counting_function(rdx,lines))
+
+                if 'timing' not in os.listdir(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/pin/'+pins_list[kdx]):
+                    os.mkdir(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/pin/'+pins_list[kdx]+'/timing')
+
+                for rdx in range(len(timing_start_idx)):
+                    temp_cases=libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/pin/'+pins_list[kdx]+'/timing/timing_case_'+str(rdx)+'.txt'
+                    for qdx in range(timing_end_idx[rdx]-timing_start_idx[rdx]+1):
+                        if qdx==0:
+                            with open(temp_cases,'w') as fw:
+                                fw.write(lines[qdx+timing_start_idx[rdx]])
+                            fw.close()
+
+                        else:
+                            with open(temp_cases,'a') as fw:
+                                fw.write(lines[qdx+timing_start_idx[rdx]])
+                            fw.close()
+                
+                #tt=tt+1
+
+
+                #print(list_of_cell[idx])
+                #print(pins_list[kdx])
+
+                
+        #if tt>0:
+        #    break
+
+        if che=='break':
+            print('breakkkkkkkkkkkkkkk')
+            break
+
+        #print()        
+        '''for kdx in range(len(directory_and_info)):
+                with open(libb.split('.lib')[0]+'/'+list_of_cell[idx]+'/pin/naive.txt','r') as fw:
+                    lines=fw.readlines()
+                fw.close()
+        
+        if len(lines)==0:
+            print(list_of_cell[idx],'continue')
+            print()
+            continue
+
+        for kdx in range(len(lines)):
+            lines[kdx]=lines[kdx].replace('\n','')'''
+
+    return 0
+
+
+
+if __name__=="__main__":
+    lib='../../data/20221219/LIB/tcbn40lpbwp12tm1ptc_ccs.lib'
+    #lib='../../data/20221219/LIB/tcbn40lpbwp12tm1plvttc_ccs.lib'
     
-    target='dynamic_current'##################################################### dynamic_current, pin, leakage_power, leakage_current_intrinsic_parasitic, pg_pin, test_cell, statetable, ff, latch
+    target='pin'##################################################### dynamic_current, pin, leakage_power, leakage_current_intrinsic_parasitic, pg_pin, test_cell, statetable, ff, latch
     #target='info'##################################################### info (info.txt)
-    if target!='info':
-        get_naive_txt(lib,target)
-    else:
-        get_info_txt(lib)
+    timing_target='timing'
+
+
+    if sys.argv[1]=='0':
+        if target!='info':
+            get_naive_txt(lib,target)
+        else:
+            get_info_txt(lib)
+
+    elif sys.argv[1]=='1':
+        get_each_timing(lib)

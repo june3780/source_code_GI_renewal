@@ -3,6 +3,7 @@ import os
 import json
 import copy
 import pandas as pd
+from itertools import permutations
 
 
 def get_statetable(address,diff):
@@ -390,58 +391,143 @@ def get_function_equation(info,functions,lib):
     print('#################################################################################################################################')
     print()
     tt=int()
+    bre=''
+
+    txt_dict=dict()
     for ivalue in functions:
+        
+        #print(ivalue)
         for kvalue in functions[ivalue]:
             if 'pin' not in os.listdir(lib+'/'+ivalue):
+                continue
+                print()
                 continue
             
             if 'output_'+kvalue not in os.listdir(lib+'/'+ivalue+'/pin'):
                 continue
-
-            if 'timing.txt' in os.listdir(lib+'/'+ivalue+'/pin/output_'+kvalue):
-                with open(lib+'/'+ivalue+'/pin/output_'+kvalue+'/timing.txt','r') as fw:
-                    lines=fw.readlines()
-                fw.close()
-
-            else:
+                print()
                 continue
 
-            for tvalue in functions[ivalue][kvalue]:
-                #print(functions[ivalue][kvalue][tvalue])
-                case_from_timing=dict()
+            if 'timing' not in os.listdir(lib+'/'+ivalue+'/pin/output_'+kvalue):
+                continue
+                print()
+                continue
+            
+            if ivalue not in txt_dict:
+                txt_dict.update({ivalue:dict()})
+
+            txt_dict[ivalue].update({kvalue:dict()})
+            #print(kvalue)
+            condi=str()
+            for tvalue in os.listdir(lib+'/'+ivalue+'/pin/output_'+kvalue+'/timing'):
+                with open(lib+'/'+ivalue+'/pin/output_'+kvalue+'/timing/'+tvalue) as fw:
+                    lines=fw.readlines()
+                fw.close()
+                #print(tvalue)
+
+                che_sdf=str()
+                che_when=str()
+                che_combi=str()
+                che_unate=str()
+
+                once_sense=str()
+                once_type=str()
+                once_pin=str()
+                once_sdf=str()
+                once_when=str()
+
+                unate_line=str()
+                when_line=str()
+                sdf_line=str()
+                related_line=str()
+
                 for rdx in range(len(lines)):
+                    if lines[rdx].replace('\n','').strip().startswith('timing_sense :') and once_sense=='':
+                        che_unate=lines[rdx].replace('\n','').strip().split(':')[1].split(';')[0].strip()
+                        once_sense='1'
+                        unate_line=che_unate
+                        #@continue
+                        #print(lines[rdx].replace('\n','').strip())
+
+                    if lines[rdx].replace('\n','').strip().startswith('timing_type :') and once_type=='':
+                        che_combi=lines[rdx].replace('\n','').strip().split(':')[1].split(';')[0].strip()
+                        once_type='1'
+                        #@continue
+                        #print(lines[rdx].replace('\n','').strip())
+
+                    if lines[rdx].replace('\n','').strip().startswith('related_pin :') and once_pin=='':
+                        once_pin='1'
+                        #@continue
+                        related_line=lines[rdx].replace('\n','').strip().split('"')[1]
+                        #print(lines[rdx].replace('\n','').strip().split('"')[1])
+
+                    if lines[rdx].replace('\n','').strip().startswith('sdf_cond :') and once_sdf=='':
+                        che_sdf='sdf'
+                        once_sdf='1'
+                        sdf_line=lines[rdx].split('"')[1]
+                        #@continue
+                        #print(lines[rdx].replace('\n','').strip())
+
+                    if lines[rdx].replace('\n','').strip().startswith('when :') and once_when=='':
+                        when_line=lines[rdx].split('"')[1]
+                        che_when='when'
+                        once_when='1'
+                        #@continue
+                        #print(lines[rdx].replace('\n','').strip())
+                
+                
+                if related_line not in txt_dict[ivalue][kvalue]:
+                    txt_dict[ivalue][kvalue].update({related_line:dict()})
+                
+                #print()
+
+                if che_combi=='combinational' or che_combi=='three_state_enable' or che_combi=='three_state_disable':
+                    condi='con'
                     
-                    if lines[rdx].replace('\n','').strip().startswith('related_pin : '+'\"'+tvalue):
-                        if lines[rdx+1].replace('\n','').strip().startswith('sdf_cond :'):
-                            continue
-                            print(ivalue)
-                            print(kvalue)
-                            print(tvalue)
-                            print(lines[rdx].replace('\n',''))
-                            print(lines[rdx+1].replace('\n',''))
-                            print(lines[rdx+2].replace('\n',''))
-                            print(lines[rdx+3].replace('\n',''))
-                            print()
-                        
-                        print(ivalue)
-                        if ivalue not in checking_list:
-                            checking_list.append(ivalue)
-                        print(kvalue)
-                        print(tvalue)
-                        print(lines[rdx].replace('\n',''))
-                        print(lines[rdx+1].replace('\n',''))
-                        print(lines[rdx+2].replace('\n',''))
-                        print(lines[rdx+3].replace('\n',''))
-                        print()
-    
-    print(checking_list)
-    print(len(checking_list))
+                else:
+                    bre='break'
+                    
+                if che_unate=='positive_unate' or che_unate=='negative_unate':
+                    condi='con'
+                else:
+                    bre='break'
+
+                if che_when=='when' and che_sdf=='sdf':
+                    sdf_dict=dict()
+                    when_dict=dict()
+
+                    for jvalue in sdf_line.split('&&'):
+                        sdf_dict.update({jvalue.strip().split('==')[0].strip():jvalue.strip().split('==')[1].strip().split("1\'b")[1].strip()})
+
+                    for jvalue in when_line.split('&'):
+                        if jvalue.strip().startswith('!'):
+                            when_dict.update({jvalue.replace('!','').strip():'0'})
+                        else:
+                            when_dict.update({jvalue.strip():'1'})
+
+                    if when_dict!=sdf_dict:
+                        bre='break'
+
+                    txt_dict[ivalue][kvalue][related_line].update({when_line:che_unate})
+                elif che_when=='' and che_sdf=='':
+                    condi='con'
+                else:
+                    bre='break'
+
+            if bre=='break':
+                break
+
+
+        if bre=='break':
+            print(ivalue)
+            print('tpgmwlns!!!!!!!','break')
+            break
     print(len(functions))
         #tt=tt+1
         #if tt>0:
         #    break
 
-    return sign_list
+    return txt_dict
 
 
 
@@ -453,7 +539,9 @@ def get_truthtable(info):
     che='che'
     all_output_dict=dict()
     for ivalue in info:
+
         print(ivalue)
+
         temp_output_dict=dict()
         temp_output_pins=dict()
         other_input_pins=list()
@@ -465,6 +553,7 @@ def get_truthtable(info):
                 other_input_pins.append(kvalue)
 
         temp_input_pins=copy.deepcopy(other_input_pins)
+
         for kdx in range(len(other_input_pins)):
             for tdx in range(len(temp_input_pins)):
                 if tdx ==0:
@@ -475,15 +564,25 @@ def get_truthtable(info):
                     other_input_pins[tdx]=other_input_pins[tdx-1]
                     other_input_pins[tdx-1]=temp
                     break
-        
+
         for kvalue in temp_output_pins:
+
             temp_function=str()
             temp_function=info[ivalue][kvalue]['function'].replace(' ! ','~').replace(' + ','|').replace('! ','~').replace('+ ','|').replace(' !','~').replace(' +','|').replace('!','~').replace('+','|')
-            temp_function=temp_function.replace(' ','&')
-
+            if '&' not in temp_function:
+                temp_function=temp_function.replace(' ','&')
             one_dict=get_cases(other_input_pins,temp_function)
+            not_included_inputs=list()
+
+            for rvalue in other_input_pins:
+                if rvalue not in one_dict['inputs']:
+                    not_included_inputs.append(rvalue)
+            
+            one_dict.update({'not_included':not_included_inputs})
             temp_output_dict.update({kvalue:one_dict})
-        all_output_dict.update({ivalue:checking_cases(temp_output_dict)})
+        #if ivalue=='FCSICIND1BWP12TM1P':
+            all_output_dict.update({ivalue:checking_cases(temp_output_dict)})
+        
 
 
     return all_output_dict
@@ -572,21 +671,41 @@ def checking_cases(one_dict):
 
             decoder_list.append(temple)
         
-
         columnlist=copy.deepcopy(one_dict[ivalue]['inputs'])
         columnlist.append('idx')
         columnlist.append('result')
         
+
+
         df=pd.DataFrame(data=decoder_list,columns=columnlist)
+
+        for kdx in range(len(one_dict[ivalue]['not_included'])):
+            df=df.append(df,ignore_index = True)
+        df['idx']=(list(df.index))
+        
+        for kdx in range(len(one_dict[ivalue]['not_included'])):
+            temp_binary=list()
+            temp_constant=1
+            temp_counts=int()
+            for rdx in range(len(list(df.columns))-2):
+                temp_constant=temp_constant*2
+            temp_counts=int(len(list(df.index))/temp_constant)
+
+            
+            for rdx in range(temp_counts):
+                for qdx in range(temp_constant):
+                    temp_binary.append(str(rdx%2))
+            df.insert(0,one_dict[ivalue]['not_included'][kdx],temp_binary)
+
         cases=get_unateness(df)
+        #print(cases)
+        #print()
         all_related_pins[ivalue].update(cases)
         for kdx in range(len(one_dict[ivalue]['inputs'])-1):
             df=get_pandas_idx(df)
 
             cases=get_unateness(df)
             all_related_pins[ivalue].update(cases)
-            
-    
     return all_related_pins
 
 
@@ -659,7 +778,6 @@ def get_unateness(df1):
     other_inputs.remove(checking_index)
 
     result_info=list(df1['result'])
-    
     for idx in range(int(len(result_info)/2)):
         if result_info[idx*2]!=result_info[idx*2+1]:
             temp_string=str()
@@ -669,14 +787,80 @@ def get_unateness(df1):
             temp_string=temp_string.strip()
             
             if result_info[idx*2]==0:
-                case[checking_index].update({temp_string:'positive_unateness'})
+                case[checking_index].update({temp_string:'positive_unate'})
             else:
-                case[checking_index].update({temp_string:'negative_unateness'})
+                case[checking_index].update({temp_string:'negative_unate'})
 
     return case
 
 
 
+
+
+
+def compare_with_txt_to_function(all1,all2):
+    for ivalue in all2:
+        for kvalue in all2[ivalue]:
+            for tvalue in all2[ivalue][kvalue]:
+                print(all2[ivalue][kvalue][tvalue])
+
+
+    for ivalue in all1:
+        if ivalue not in all2:
+            continue
+
+        for kvalue in all1[ivalue]:
+            if kvalue not in all2[ivalue]:
+                continue
+
+            for tvalue in all1[ivalue][kvalue]:
+                if tvalue not in all2[ivalue][kvalue]:
+                    continue
+
+
+                func=dict()
+                for rdx,rvalue in enumerate(all2[ivalue][kvalue][tvalue]):
+                    temp_group=list()
+                    for jvalue in rvalue.split('&'):
+                        temp_group.append(jvalue)
+
+                    temp_list=list()
+                    for jvalue in list(permutations(temp_group, len(temp_group))):
+                        temp_str=str()
+                        for cdx in range(len(jvalue)):
+                            if cdx!=len(jvalue)-1:
+                                if '!' in jvalue[cdx]:
+                                    temp_str=temp_str+jvalue[cdx].replace('!','')+'__0 '
+                                else:
+                                    temp_str=temp_str+jvalue[cdx]+'__1 '
+                            else:
+                                if '!' in jvalue[cdx]:
+                                    temp_str=temp_str+jvalue[cdx].replace('!','')+'__0'
+                                else:
+                                    temp_str=temp_str+jvalue[cdx]+'__1'
+                        temp_list.append(temp_str)
+                    bre='break'
+                    for jvalue in temp_list:
+                        if jvalue in all1[ivalue][kvalue][tvalue]:
+                            if all2[ivalue][kvalue][tvalue][rvalue]==all1[ivalue][kvalue][tvalue][jvalue]:
+                                bre=str()
+                    if bre=='break':
+                        print('tpgmlwhsarfaewtfgagtawgfaewfearwsfgatewahnfkjashef@@@@@#@#@###!@!@')
+                        print(ivalue)
+                        print(kvalue)
+                        print(tvalue)
+                        print(rvalue)
+                        break
+                if bre=='break':
+                    break
+            if bre=='break':
+                break
+        if bre=='break':
+            break
+
+
+
+    return 0
 
 if __name__=="__main__":
 
@@ -703,7 +887,7 @@ if __name__=="__main__":
             temp=json.load(fw)
         fw.close()
         temp=get_truthtable(temp)
-        with open('temp_function_'+checking+'.json','w') as fw:
+        with open('temp_function_'+checking+'_from_truth_table.json','w') as fw:
             json.dump(temp,fw,indent=4)
         fw.close()
 
@@ -717,8 +901,18 @@ if __name__=="__main__":
             temp1=json.load(fw)
         fw.close()
 
-        get_function_equation(temp,temp1,lib_address)
+        tenp=get_function_equation(temp,temp1,lib_address)
+        with open('temp_function_'+checking+'_from_txt.json','w') as fw:
+            json.dump(tenp,fw,indent=4)
+        fw.close()
 
+    elif sys.argv[1]=='3':
+        with open('temp_function_'+checking+'_from_truth_table.json','r') as fw:
+            from_function=json.load(fw)
+        fw.close()
 
-            
+        with open('temp_function_'+checking+'_from_txt.json','r') as fw:
+            from_txt=json.load(fw)
+        fw.close()        
 
+        compare_with_txt_to_function(from_function,from_txt)

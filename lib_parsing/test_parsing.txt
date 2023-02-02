@@ -1,0 +1,701 @@
+/***********************************************************************************
+* TSMC Library/IP Product
+* Filename: tcbn40lpbwp12tm1plvttc_ccs.lib
+* Technology: CLN40LP
+* Product Type: Standard Cell
+* Product Name: tcbn40lpbwp12tm1plvt
+* Version: 200a
+************************************************************************************/
+/*
+*  STATEMENT OF USE
+*
+*  This information contains confidential and proprietary information of TSMC.
+*  No part of this information may be reproduced, transmitted, transcribed,
+*  stored in a retrieval system, or translated into any human or computer
+*  language, in any form or by any means, electronic, mechanical, magnetic,
+*  optical, chemical, manual, or otherwise, without the prior written permission
+*  of TSMC.  This information was prepared for informational purpose and is for
+*  use by TSMC's customers only.  TSMC reserves the right to make changes in the
+*  information at any time and without notice.
+*
+*************************************************************************************/
+/*******************************************************************
+*                   LIBRARY :   tcbn40lpbwp12tm1plvttc_ccs
+*                   Author  :   STDCELL
+*                   Method  :   Stuff cells delay Using
+*                               CHEETAH(TSMC ASIC CELL CHARACTERIZATION)
+*                   Comment :   This library was created by
+*                               TSMC SYNOPSYS TEMPLATE library
+*                               and stuffed timing using CHEETAH.
+*                               Engineer should take care of  library dependent
+*                               technology such as template,
+*                               voltage, process k factor and
+*                               wire-load etc
+*                      Unit :
+*                               time : ns
+*                               capacitance : pf
+*                   Update  :
+*                               version 133
+*                               Wed Oct 27 22:09:04 CST 2010
+*                               (1) Stuff CHEETAH timing
+********************************************************************/
+library (tcbn40lpbwp12tm1plvttc_ccs) {
+    /*  library head: tcbn40lpbwp12tm1plvt */
+    technology (cmos) ;
+    delay_model : table_lookup ;
+    date                : "Wed Oct 27 22:09:04 CST 2010 " ;
+    comment : "Copyright TSMC" ;
+    revision    : 133 ;
+    simulation  : true ;
+    nom_process : 1 ; /* TTMacro_MOS_MOSCAP TT_RES_BIP_DIO_DISRES */
+    nom_temperature : 25;
+    nom_voltage : 1.1;
+    voltage_map(COREVDD1, 1.1);
+    voltage_map(COREGND1, 0.0);
+    operating_conditions("NCCOM"){
+        process : 1; /* TTMacro_MOS_MOSCAP TT_RES_BIP_DIO_DISRES */
+        temperature : 25;
+        voltage : 1.1;
+        tree_type : "balanced_tree";
+    }
+    default_operating_conditions : NCCOM ;
+    capacitive_load_unit (1,pf) ;
+    voltage_unit : "1V" ;
+    current_unit : "1mA" ;
+    time_unit : "1ns" ;
+    pulling_resistance_unit : "1kohm"; 
+    define_cell_area (pad_drivers,pad_driver_sites) ;
+    define_cell_area(bond_pads,pad_slots) ;
+    library_features (report_delay_calculation);
+    default_leakage_power_density : 0.0;
+    default_fanout_load : 1;
+    input_voltage(cmos) {
+        vil : 0.3 * VDD ;
+        vih : 0.7 * VDD ;
+        vimin : -0.5 ;
+        vimax : VDD + 0.5 ;
+    }
+    input_voltage(cmos_schmitt) {
+         vil : 0.3 * VDD ;
+         vih : 0.7 * VDD ;
+         vimin : -0.5 ;
+         vimax : VDD + 0.5 ;
+    }
+    input_voltage(schmitt) {
+         vil : 0.3 * VDD ;
+         vih : 0.7 * VDD ;
+         vimin : -0.5 ;
+         vimax : VDD + 0.5 ;
+    }
+    input_voltage(ttl) {
+         vil : 0.8 ;
+         vih : 2.0 ;
+         vimin : -0.5 ;
+         vimax : VDD + 0.5 ;
+    }
+    input_voltage(ttl_schmitt) {
+         vil : 0.8 ;
+         vih : 2.0 ;
+         vimin : -0.5 ;
+         vimax : VDD + 0.5 ;
+    }
+    input_voltage(pci) {
+         vil : 0.8 ;
+         vih : 2.0 ;
+         vimin : -0.5 ;
+         vimax : VDD + 0.5 ;
+    }
+    output_voltage(cmos) {
+         vol : 0.3 * VDD ;
+         voh : 0.7 * VDD ;
+         vomin : -0.5 ;
+         vomax : VDD + 0.5 ;
+    }
+    output_voltage(cmos_schmitt) {
+         vol : 0.3 * VDD ;
+         voh : 0.7 * VDD ;
+         vomin : -0.5 ;
+         vomax : VDD + 0.5 ;
+    }
+    output_voltage(schmitt) {
+         vol : 0.3 * VDD ;
+         voh : 0.7 * VDD ;
+         vomin : -0.5 ;
+         vomax : VDD + 0.5 ;
+    }
+    output_voltage(ttl) {
+         vol : 0.8 ;
+         voh : 2.0 ;
+         vomin : -0.5 ;
+         vomax : VDD + 0.5 ;
+    }
+    output_voltage(ttl_schmitt) {
+         vol : 0.8 ;
+         voh : 2.0 ;
+         vomin : -0.5 ;
+         vomax : VDD + 0.5 ;
+    }
+    output_voltage(pci) {
+         vol : 0.8 ;
+         voh : 2.0 ;
+         vomin : -0.5 ;
+         vomax : VDD + 0.5 ;
+    }
+
+wire_load("ZeroWireload") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0 ;
+fanout_length(1,0.0000)
+fanout_length(2,0.0000)
+fanout_length(3,0.0000)
+fanout_length(4,0.0000)
+fanout_length(5,0.0000)
+fanout_length(6,0.0000)
+fanout_length(7,0.0000)
+fanout_length(8,0.0000)
+fanout_length(9,0.0000)
+fanout_length(10,0.0000)
+fanout_length(11,0.0000)
+fanout_length(12,0.0000)
+fanout_length(13,0.0000)
+fanout_length(14,0.0000)
+fanout_length(15,0.0000)
+fanout_length(16,0.0000)
+fanout_length(17,0.0000)
+fanout_length(18,0.0000)
+fanout_length(19,0.0000)
+fanout_length(20,0.0000)
+}
+
+wire_load("TSMC8K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0018
+fanout_length(1,0.0004)
+fanout_length(2,0.0008)
+fanout_length(3,0.0012)
+fanout_length(4,0.0017)
+fanout_length(5,0.0025)
+fanout_length(6,0.0033)
+fanout_length(7,0.0039)
+fanout_length(8,0.0043)
+fanout_length(9,0.0048)
+fanout_length(10,0.0066)
+}
+
+wire_load_selection(WireAreaForZero){
+wire_load_from_area(0, 537350, "TSMC8K_Lowk_Conservative");
+}
+
+wire_load("TSMC16K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0018
+fanout_length(1,0.0004)
+fanout_length(2,0.0008)
+fanout_length(3,0.0013)
+fanout_length(4,0.0018)
+fanout_length(5,0.0026)
+fanout_length(6,0.0035)
+fanout_length(7,0.0041)
+fanout_length(8,0.0047)
+fanout_length(9,0.0053)
+fanout_length(10,0.0071)
+}
+wire_load("TSMC32K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0021
+fanout_length(1,0.0004)
+fanout_length(2,0.0009)
+fanout_length(3,0.0015)
+fanout_length(4,0.0020)
+fanout_length(5,0.0030)
+fanout_length(6,0.0040)
+fanout_length(7,0.0048)
+fanout_length(8,0.0053)
+fanout_length(9,0.0059)
+fanout_length(10,0.0080)
+}
+wire_load("TSMC64K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0026
+fanout_length(1,0.0004)
+fanout_length(2,0.0011)
+fanout_length(3,0.0018)
+fanout_length(4,0.0024)
+fanout_length(5,0.0036)
+fanout_length(6,0.0048)
+fanout_length(7,0.0057)
+fanout_length(8,0.0064)
+fanout_length(9,0.0072)
+fanout_length(10,0.0098)
+}
+wire_load("TSMC128K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0032
+fanout_length(1,0.0004)
+fanout_length(2,0.0012)
+fanout_length(3,0.0022)
+fanout_length(4,0.0030)
+fanout_length(5,0.0046)
+fanout_length(6,0.0062)
+fanout_length(7,0.0073)
+fanout_length(8,0.0082)
+fanout_length(9,0.0092)
+fanout_length(10,0.0124)
+}
+wire_load("TSMC256K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0049
+fanout_length(1,0.0004)
+fanout_length(2,0.0017)
+fanout_length(3,0.0032)
+fanout_length(4,0.0045)
+fanout_length(5,0.0068)
+fanout_length(6,0.0093)
+fanout_length(7,0.0110)
+fanout_length(8,0.0124)
+fanout_length(9,0.0139)
+fanout_length(10,0.0188)
+}
+wire_load("TSMC512K_Lowk_Conservative") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0081
+fanout_length(1,0.0004)
+fanout_length(2,0.0027)
+fanout_length(3,0.0052)
+fanout_length(4,0.0074)
+fanout_length(5,0.0113)
+fanout_length(6,0.0155)
+fanout_length(7,0.0182)
+fanout_length(8,0.0207)
+fanout_length(9,0.0233)
+fanout_length(10,0.0314)
+}
+wire_load_selection(WireAreaLowkCon){
+wire_load_from_area(0, 8395, "TSMC8K_Lowk_Conservative");
+wire_load_from_area(8395, 18890, "TSMC16K_Lowk_Conservative");
+wire_load_from_area(18890, 39414, "TSMC32K_Lowk_Conservative");
+wire_load_from_area(39414, 75564, "TSMC64K_Lowk_Conservative");
+wire_load_from_area(75564, 134337, "TSMC128K_Lowk_Conservative");
+wire_load_from_area(134337, 268675, "TSMC256K_Lowk_Conservative");
+wire_load_from_area(268675, 537350, "TSMC512K_Lowk_Conservative");
+}
+
+wire_load("TSMC8K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0013
+fanout_length(1,0.0002)
+fanout_length(2,0.0005)
+fanout_length(3,0.0009)
+fanout_length(4,0.0012)
+fanout_length(5,0.0018)
+fanout_length(6,0.0024)
+fanout_length(7,0.0028)
+fanout_length(8,0.0032)
+fanout_length(9,0.0035)
+fanout_length(10,0.0048)
+}
+wire_load("TSMC16K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0013
+fanout_length(1,0.0002)
+fanout_length(2,0.0005)
+fanout_length(3,0.0009)
+fanout_length(4,0.0012)
+fanout_length(5,0.0018)
+fanout_length(6,0.0025)
+fanout_length(7,0.0029)
+fanout_length(8,0.0033)
+fanout_length(9,0.0037)
+fanout_length(10,0.0050)
+}
+wire_load("TSMC32K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0014
+fanout_length(1,0.0002)
+fanout_length(2,0.0005)
+fanout_length(3,0.0010)
+fanout_length(4,0.0013)
+fanout_length(5,0.0019)
+fanout_length(6,0.0026)
+fanout_length(7,0.0031)
+fanout_length(8,0.0035)
+fanout_length(9,0.0040)
+fanout_length(10,0.0054)
+}
+wire_load("TSMC64K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0015
+fanout_length(1,0.0002)
+fanout_length(2,0.0006)
+fanout_length(3,0.0011)
+fanout_length(4,0.0014)
+fanout_length(5,0.0021)
+fanout_length(6,0.0029)
+fanout_length(7,0.0034)
+fanout_length(8,0.0039)
+fanout_length(9,0.0043)
+fanout_length(10,0.0058)
+}
+wire_load("TSMC128K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0018
+fanout_length(1,0.0002)
+fanout_length(2,0.0006)
+fanout_length(3,0.0012)
+fanout_length(4,0.0017)
+fanout_length(5,0.0025)
+fanout_length(6,0.0033)
+fanout_length(7,0.0039)
+fanout_length(8,0.0044)
+fanout_length(9,0.0049)
+fanout_length(10,0.0067)
+}
+wire_load("TSMC256K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0023
+fanout_length(1,0.0002)
+fanout_length(2,0.0008)
+fanout_length(3,0.0015)
+fanout_length(4,0.0021)
+fanout_length(5,0.0032)
+fanout_length(6,0.0044)
+fanout_length(7,0.0051)
+fanout_length(8,0.0058)
+fanout_length(9,0.0065)
+fanout_length(10,0.0088)
+}
+wire_load("TSMC512K_Lowk_Aggresive") {
+resistance : 0.00001 ;
+capacitance : 1 ;
+area : 0
+slope : 0.0039
+fanout_length(1,0.0002)
+fanout_length(2,0.0011)
+fanout_length(3,0.0021)
+fanout_length(4,0.0030)
+fanout_length(5,0.0046)
+fanout_length(6,0.0064)
+fanout_length(7,0.0075)
+fanout_length(8,0.0085)
+fanout_length(9,0.0096)
+fanout_length(10,0.0135)
+}
+wire_load_selection(WireAreaLowkAgr){
+wire_load_from_area(0, 8395, "TSMC8K_Lowk_Aggresive");
+wire_load_from_area(8395, 18890, "TSMC16K_Lowk_Aggresive");
+wire_load_from_area(18890, 39414, "TSMC32K_Lowk_Aggresive");
+wire_load_from_area(39414, 75564, "TSMC64K_Lowk_Aggresive");
+wire_load_from_area(75564, 134337, "TSMC128K_Lowk_Aggresive");
+wire_load_from_area(134337, 268675, "TSMC256K_Lowk_Aggresive");
+wire_load_from_area(268675, 537350, "TSMC512K_Lowk_Aggresive");
+}
+
+default_wire_load_selection : "WireAreaForZero";
+default_wire_load : "TSMC8K_Lowk_Conservative";
+default_wire_load_mode : segmented;
+in_place_swap_mode : match_footprint ;
+                                   
+default_max_transition :      0.3392
+default_inout_pin_cap :       0.0009753
+default_input_pin_cap :       0.0009753
+default_output_pin_cap :      0
+
+slew_lower_threshold_pct_rise :  30.00
+slew_upper_threshold_pct_rise :  70.00
+slew_derate_from_library :  0.50
+input_threshold_pct_fall :  50.00
+output_threshold_pct_fall :  50.00
+input_threshold_pct_rise :  50.00
+output_threshold_pct_rise :  50.00
+slew_lower_threshold_pct_fall :  30.00
+slew_upper_threshold_pct_fall :  70.00
+
+/*****************************************/
+/*    Please hand edit power model ! */
+
+/*
+       Units for internal energy table must be (V**2) * C
+       for this example Internal power = (1v)**2 * 1 pf =  1pJoules
+ 
+       The # displayed by Design power in report_power command
+       is V**2 * C * (1/time_unit) for this example is 1 mW
+    */
+        /*********************************************/
+        /* Added for DesignPower (Power Estimation). */
+        leakage_power_unit : 1nW;
+        default_cell_leakage_power : 0;
+ 
+ 
+/*****************************************/
+/********************************************************************/
+/*    Support table template from CHEETAH */
+/********************************************************************/
+  output_current_template (ccs_template) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    variable_3 : time;
+  }
+  lu_table_template (ccsn_dc_template) {
+    variable_1 : input_voltage;
+    variable_2 : output_voltage;
+  }
+  lu_table_template (ccsn_prop_template) {
+    variable_1 : input_noise_height;
+    variable_2 : input_noise_width;
+    variable_3 : total_output_net_capacitance;
+    variable_4 : time;
+  }
+  lu_table_template (ccsn_vout_template) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    variable_3 : time;
+  }
+  pg_current_template (ccsp_template1) {
+    variable_1 : input_net_transition;
+    variable_2 : time;
+  }
+  pg_current_template (ccsp_template2) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    variable_3 : time;
+  }
+  lu_table_template (constraint_template_3x3) {
+    variable_1 : related_pin_transition;
+    variable_2 : constrained_pin_transition;
+    index_1 ("0.0001, 0.0002, 0.0003");
+    index_2 ("0.0001, 0.0002, 0.0003");
+  }
+  lu_table_template (delay_template_7x7_0) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007");
+    index_2 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007");
+  }
+  lu_table_template (delay_template_8x8_0) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008");
+    index_2 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008");
+  }
+  lu_table_template (mpw_constraint_template_3x3) {
+    variable_1 : related_pin_transition;
+    index_1 ("0.0001, 0.0002, 0.0003");
+  }
+  power_lut_template (passive_power_template_7x1_0) {
+    variable_1 : input_transition_time;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007");
+  }
+  power_lut_template (passive_power_template_8x1_0) {
+    variable_1 : input_transition_time;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008");
+  }
+  power_lut_template (power_template_7x7_0) {
+    variable_1 : input_transition_time;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007");
+    index_2 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007");
+  }
+  power_lut_template (power_template_8x8_0) {
+    variable_1 : input_transition_time;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008");
+    index_2 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008");
+  }
+  lu_table_template (receiver_cap_power_template_7x7_0) {
+    variable_1 : input_net_transition;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007");
+  }
+  lu_table_template (receiver_cap_power_template_8x8_0) {
+    variable_1 : input_net_transition;
+    index_1 ("0.0001, 0.0002, 0.0003, 0.0004, 0.0005, 0.0006, 0.0007, 0.0008");
+  }
+/* -------------------------- *
+ * Design : AN2D0BWP12TM1PLVT *
+ * -------------------------- */
+/* --------------------------- *
+ * Design : AN2D16BWP12TM1PLVT *
+ * --------------------------- */
+/* -------------------------- *
+ * Design : AN2D1BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN2D2BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN2D4BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN2D8BWP12TM1PLVT *
+ * -------------------------- */
+/* --------------------------- *
+ * Design : AN2XD0BWP12TM1PLVT *
+ * --------------------------- */
+/* ---------------------------- *
+ * Design : AN2XD16BWP12TM1PLVT *
+ * ---------------------------- */
+/* --------------------------- *
+ * Design : AN2XD1BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AN2XD2BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AN2XD4BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AN2XD8BWP12TM1PLVT *
+ * --------------------------- */
+/* -------------------------- *
+ * Design : AN3D0BWP12TM1PLVT *
+ * -------------------------- */
+/* --------------------------- *
+ * Design : AN3D16BWP12TM1PLVT *
+ * --------------------------- */
+/* -------------------------- *
+ * Design : AN3D1BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN3D2BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN3D4BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN3D8BWP12TM1PLVT *
+ * -------------------------- */
+/* --------------------------- *
+ * Design : AN3XD0BWP12TM1PLVT *
+ * --------------------------- */
+/* ---------------------------- *
+ * Design : AN3XD16BWP12TM1PLVT *
+ * ---------------------------- */
+/* --------------------------- *
+ * Design : AN3XD1BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AN3XD2BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AN3XD4BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AN3XD8BWP12TM1PLVT *
+ * --------------------------- */
+/* -------------------------- *
+ * Design : AN4D0BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN4D1BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN4D2BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN4D4BWP12TM1PLVT *
+ * -------------------------- */
+/* -------------------------- *
+ * Design : AN4D8BWP12TM1PLVT *
+ * -------------------------- */
+/* --------------------------- *
+ * Design : AN4XD1BWP12TM1PLVT *
+ * --------------------------- */
+/* ---------------------------- *
+ * Design : ANTENNABWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO211D0BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO211D1BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO211D2BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO211D4BWP12TM1PLVT *
+ * ---------------------------- */
+/* --------------------------- *
+ * Design : AO21D0BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AO21D1BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AO21D2BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AO21D4BWP12TM1PLVT *
+ * --------------------------- */
+/* ---------------------------- *
+ * Design : AO221D0BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO221D1BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO221D2BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO221D4BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO222D0BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO222D1BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO222D2BWP12TM1PLVT *
+ * ---------------------------- */
+/* ---------------------------- *
+ * Design : AO222D4BWP12TM1PLVT *
+ * ---------------------------- */
+/* --------------------------- *
+ * Design : AO22D0BWP12TM1PLVT *
+ * --------------------------- */
+/* ---------------------------- *
+ * Design : AO22D16BWP12TM1PLVT *
+ * ---------------------------- */
+/* --------------------------- *
+ * Design : AO22D1BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AO22D2BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AO22D4BWP12TM1PLVT *
+ * --------------------------- */
+/* --------------------------- *
+ * Design : AO22D8BWP12TM1PLVT *
+ * --------------------------- */
+/* ---------------------------- *
+ * Design : AO22XD0BWP12TM1PLVT *
+ * ---------------------------- */

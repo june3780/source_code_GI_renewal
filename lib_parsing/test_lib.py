@@ -41,10 +41,17 @@ def be_parsing():
 
     for idx in range(len(lib_list)):
         #print('checking=\''+lib_list[idx]+'\'')
+        for kdx in range(12):
             start=time.time()
-            print(str(6)+' '+lib_list[idx])
-            os.system('python3 lib_parsing_final.py '+str(6)+' '+lib_list[idx])
+            print(str(kdx)+' '+lib_list[idx])
+            print()
+            os.system('python3 lib_parsing_real.py '+str(kdx)+' '+lib_list[idx])
+            print()
             print('end',time.time()-start)
+            print()
+
+            #break
+            
             #print()
             
 

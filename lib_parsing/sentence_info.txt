@@ -1,0 +1,12 @@
+cell의 문장 정보 :
+['area', 'interface_timing', 'dont_use', 'dont_touch', 'map_only', 'drive_strength', 'cell_leakage_power', 'clock_gating_integrated_cell', 'cell_footprint']
+
+
+pin의 문장 정보 :
+['direction']
+['fall_capacitance','rise_capacitance','capacitance','nextstate_type','clock','max_transition']
+['max_capacitance','fall_capacitance','rise_capacitance','capacitance',\
+                'power_down_function','state_function','function','three_state',\
+                'related_ground_pin','related_power_pin','clock_gate_out_pin','driver_type']
+
+

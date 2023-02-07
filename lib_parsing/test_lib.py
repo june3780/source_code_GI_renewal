@@ -1,5 +1,6 @@
 import os
 import time
+import json
 
 
 
@@ -41,21 +42,29 @@ def be_parsing():
 
     for idx in range(len(lib_list)):
         #print('checking=\''+lib_list[idx]+'\'')
-        for kdx in range(12):
-            start=time.time()
+        #if idx<21:
+            #continue
+        for kdx in range(25):
+
+            #start=time.time()
             print(str(kdx)+' '+lib_list[idx])
             print()
             os.system('python3 lib_parsing_real.py '+str(kdx)+' '+lib_list[idx])
-            print()
-            print('end',time.time()-start)
-            print()
-
+            #print()
+            #print('end',time.time()-start)
+            #print()
+    print(len(lib_list))
             #break
             
             #print()
             
 
     return 0
+
+
+
+
+
 
 if __name__=="__main__":
 

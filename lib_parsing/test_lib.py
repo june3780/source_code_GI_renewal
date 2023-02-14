@@ -44,12 +44,12 @@ def be_parsing():
         #print('checking=\''+lib_list[idx]+'\'')
         #if idx<21:
             #continue
-        for kdx in range(25):
+        #for kdx in range(25):
 
             #start=time.time()
-            print(str(kdx)+' '+lib_list[idx])
+            print(str(24)+' '+lib_list[idx])
             print()
-            os.system('python3 lib_parsing_real.py '+str(kdx)+' '+lib_list[idx])
+            os.system('python3 lib_parsing_real.py '+str(24)+' '+lib_list[idx])
             #print()
             #print('end',time.time()-start)
             #print()

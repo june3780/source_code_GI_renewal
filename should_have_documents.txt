@@ -1,0 +1,64 @@
+내가 만든 source파일
+~/Documents/PNR/timing/source
+
+
+/cts_previous_version
+	/CTO.py
+	/CTS.py
+	/CTS_RGM.py
+	/making_def_with_cts.py
+	/making_def_with_cts_RGM.py
+
+/delay_calc
+	/all_process.py
+	/comparing_temp.py
+	/get_hypergraph.py
+	/get_inputs.py
+	/get_position_by_v.py
+	/get_verilog_file_from_def.py
+	/making_temp_sdc.py
+	/sample.py
+
+/delay_calc_previous_version
+	/0_revise_checking.py
+	/0_revise_def_file.py
+	/1_for_check.py
+	/1_test.py
+	/1willbe_test.py
+	/2_for_modifying_graph.py
+	/3_making_verilog_for_graph.py
+	/example_for_checking.py
+	/exampleof7800.py
+	/initial_code_for_saving_data.py
+	/make_temp_verilog_for_gcd.py
+	/printing_path.py
+	/test-1.py
+
+/lib_parsing
+	/change_conditionlist.py
+	/change_nor.py
+	/get_lib_directory.py
+	/get_lib_from_opensta_example.py
+	/get_lib_from_superblue16.py
+	/lib_medium.py
+	/lib_parsing_final.py
+	/lib_parsing_real.py
+	/make_table_for_shallow_sequential.py
+	/making_state_table.py
+	/os_medium_table.py
+	/parsing_naive_text.py
+	/test_lib.py
+	/test_test_parsing.py
+	/wire_load_model_saving.py
+
+/read_DEF_LEF
+	/draw_fixed_MACRO.py
+
+/verilog_parsing
+	/checking_nets_components.py
+	/counting_components.py
+	/double_checking.py
+	/medium_compare.py
+	/parsing_netlist.py
+	/macro_relationship.py		
+	/one_module_net_parsing.py	clear (verilog파일을 input으로 읽고, 해당 verilog파일이 위치한 디렉토리에 verilog의 파일명과 같은 하위 디렉토리 생성 후, 해당 디렉토리에 temp_net.json과 temp_id.json을 저장)

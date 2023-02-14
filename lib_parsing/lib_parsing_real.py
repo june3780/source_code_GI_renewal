@@ -911,6 +911,9 @@ def get_lib_info_for_delay_v1(address):
                                 delay_dict[cell][pin][key_of_timing].update({'timing_sense':temp_case_info['timing_sense']})
                                 delay_dict[cell][pin][key_of_timing].update({'related_pin':temp_case_info['related_pin']})
 
+                                if 'timing_type' in temp_case_info:
+                                    delay_dict[cell][pin][key_of_timing].update({'timing_type':temp_case_info['timing_type']})
+
 
     #### parsing한 lib파일의 파일명과 같은 디렉토리에 lib_dict_for_nldm_delay_v1.json으로 저장
     with open(location_of_lib+'/lib_dict_for_nldm_delay_v1.json','w') as fw:
@@ -922,7 +925,11 @@ def get_lib_info_for_delay_v1(address):
 
 
 def get_lib_info_for_delay_v2(address):
-
+    #### 해당 lib 파일의 디렉토리 위치 : location_of_lib
+    location_of_lib=address.split('.lib')[0]
+    with open(location_of_lib+'/lib_dict_for_nldm_delay_v1.json','r') as fw:
+        nldm_v1=json.load(fw)
+    fw.close()
 
 
 

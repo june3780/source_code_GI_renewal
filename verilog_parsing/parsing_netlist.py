@@ -2,8 +2,18 @@ import json
 import copy
 import time
 import sys
+import os
 
 def get_module_dict(wherethemodule): #verilog file parsing
+    #### 해당 verilog 파일의 파일명: where_the_v+'.v'
+    where_the_v=wherethemodule.split('.v')[0]
+    #### id와 net정보를 저장할 새 디렉토리 : upper_directory+'/'+the_v
+    the_v=where_the_v.split('/')[-1]
+    upper_directory=wherethemodule.split('/'+the_v+'.v')[0]
+
+    #### 해당 verilog 파일의 위치에 하위 디렉토리가 없을 경우 생성
+    if the_v not in os.listdir(upper_directory):
+        os.mkdir(upper_directory+'/'+the_v)
 
     #### macro_list: 해당 verilog에 사용되는 macro id들의 집합, 새로운 macro가 있을 경우 update해야한다.
     macro_list=['spsram_hd_256x23m4m','spsram_hd_2048x32m4s','spsram_hd_256x22m4m','sprf_hs_128x38m2s'\
@@ -381,7 +391,7 @@ def module_ports(id,port_name,port_list,All):
                     array_wire.append(ivalue.split('[')[0])
 
     temp_array_list=list()
-    #### 확인하는 port가 단일비트를 가질 경우 port_list의 첫번째 비트로 업데이트 후 함수 리턴
+    #### 확인하는 port가 단일비트를 가질 경우 port_list의 첫번째 비트로 최신화 후 함수 리턴
     if port_name not in array_input and port_name not in array_output and port_name not in array_wire:
         new_ports_compo.update({port_name:port_list[0]})
         return new_ports_compo
@@ -404,7 +414,7 @@ def module_ports(id,port_name,port_list,All):
     else:
         print('Error : the port not in definition')
 
-    #### 멀티비트의 경우 해당 port 또한 여러 개로 쪼개서 업데이트 후 함수 리턴
+    #### 멀티비트의 경우 해당 port 또한 여러 개로 쪼개서 최신화 후 함수 리턴
     for idx in range(len(temp_array_list)):
         new_ports_compo.update({temp_array_list[idx]:port_list[idx]})
 
@@ -414,7 +424,7 @@ def module_ports(id,port_name,port_list,All):
 
 
 
-#### 해당 id가 get_module_dict의 macro_list에 포함된 macro의 경우 해당 macro의 pin을 따라 쪼개서 저장 (해당 macro를 설명하는 lef파일이나 lib파일을 통해 업데이트 필수)!!
+#### 해당 id가 get_module_dict의 macro_list에 포함된 macro의 경우 해당 macro의 pin을 따라 쪼개서 저장 (해당 macro를 설명하는 lef파일이나 lib파일을 통해 최신화 필수)!!
 def macro_ports(id,port_name,port_list):
     #### 해당하는 macro의 pin의 정보에 따라 비트 수를 정한다. num==해당 port의 비트수
     new_ports_compo=dict()
@@ -557,6 +567,16 @@ def macro_ports(id,port_name,port_list):
 
 #### 해당 verilog의 net과 components들의 id에 대한 정보를 저장하는 함수
 def get_tree(All,diff):
+    #### 해당 verilog 파일의 파일명: where_the_v+'.v'
+    where_the_v=diff.split('.v')[0]
+    #### id와 net정보를 저장할 새 디렉토리 : upper_directory+'/'+the_v
+    the_v=where_the_v.split('/')[-1]
+    upper_directory=diff.split('/'+the_v+'.v')[0]
+
+    #### 해당 verilog 파일의 위치에 하위 디렉토리가 없을 경우 생성
+    if the_v not in os.listdir(upper_directory):
+        os.mkdir(upper_directory+'/'+the_v)
+
     top_module=All[1]
     All=All[0]
 
@@ -575,7 +595,7 @@ def get_tree(All,diff):
     for ivalue in list_tree_keys:
         checking_list_func(All,ivalue,top_module)
     
-    #### all_tree의 각 모듈마다 가지는 submodule을 업데이트, submodule이 각각 가지는 module이름도 업데이트한다.
+    #### all_tree의 각 모듈마다 가지는 submodule을 최신화, submodule이 각각 가지는 module이름도 최신화한다.
     for ivalue in all_tree:
         all_tree[ivalue].update({'submodule':{}})
         for kvalue in All[all_tree[ivalue]['module']]['module_counts']:
@@ -616,11 +636,7 @@ def get_tree(All,diff):
     for ivalue in will_del:
         only_components.remove(ivalue)
 
-    #@
-    print(len(components_list_with_ports))
-    print(len(only_components))
-    print()
-    #@
+
 
     #### 실제 net을 구하여 저장할 딕셔너리 선언
     #### debt_group은 임의의 모듈A가 또 다른 모듈B의 하위모듈일 경우, A에서의 external net인 input과 output에 대한 net을 debt_group에 저장시켜서 후에 모듈 B의 net을 확인할 때 debt_group을 참고하여 모듈 B의 net을 구한다.
@@ -647,43 +663,47 @@ def get_tree(All,diff):
                         net_group['constant1'].append(ivalue+'/'+kvalue+' '+tvalue)
 
 
-    #### 여기서부터
 
     temp_all_tree=copy.deepcopy(all_tree)
 
-
+    #### top_module과 top_module의 submodule들을 제외한 module에 대해서 처리하는 동안 반복문 실행
     while True:
         counting=int()
         will_del=list()
         temp_debt_dict=dict()
 
+        #### parsing이 끝난 module들의 input net과 output net에 존재하는 component들을 처리_1
         for ivalue in debt_group:
             tempports=ivalue.split('/')[-1]
             tempsub=ivalue.split('/')[-2]
             current_mod=ivalue.split('/'+tempsub+'/'+tempports)[0]
-
+            #### ivalue가 current_mod와 같은 경우 : 해당 input_net과 output_net은 top_mododule의 submodule이기에 temp_debt_dict에 해당 내용을 추가
             if ivalue==current_mod:
                 temp_debt_dict.update({ivalue:debt_group[ivalue]})
 
+        #### parsing이 끝난 module들의 input net과 output net에 존재하는 component들을 처리_2
         for ivalue in debt_group:
             tempports=ivalue.split('/')[-1]
             tempsub=ivalue.split('/')[-2]
             current_mod=ivalue.split('/'+tempsub+'/'+tempports)[0]
 
+            #### ivalue가 current_mod와 같은 경우 : 해당 input_net과 output_net은 top_mododule의 submodule이기에 continue로 처리
             if ivalue==current_mod:
                 continue
             
+            #### ivalue의 tempports가 하위 모듈에서는 쓰이지만 current_module에선 명시되지 않은 경우 따로 net_group에 추가해준다.
             if tempports not in all_tree[current_mod]['info'][tempsub]['ports']:
                 submodule_id=all_tree[current_mod]['submodule'][tempsub]
-                if tempports in All[submodule_id]['output']:
+                if tempports in All[submodule_id]['output'] or tempports in All[submodule_id]['input']:
                     if ivalue not in net_group:
                         net_group.update({ivalue:list()})
                     for rvalue in debt_group[ivalue]:
                         net_group[ivalue].append(rvalue)
                     continue
 
+            #### current_mod에 'wire'key가 있을 경우 고려한다.
             if 'wire' in all_tree[current_mod]['info']:
-                #print(ivalue) 문제가 되는 ivalue= u_l2cc/pl310_present_u_pl310_top/TAGCLKOUT
+                #### 해당 current_mod에 존재하는 wire_net 중 해당 ivalue 의 tempports에 연결된 wire가 있을 경우 net_group에 추가한다.
                 if all_tree[current_mod]['info'][tempsub]['ports'][tempports] in all_tree[current_mod]['info']['wire']:
                     if current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports] not in net_group:
                         net_group.update({current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]:list()})
@@ -691,21 +711,21 @@ def get_tree(All,diff):
                         if kvalue not in net_group[current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]]:
                             net_group[current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]].append(kvalue)
             
+            #### 해당 ivalue의 tempport가 상위 module인 current_mod에 input_net이나 output_net에 연결된 경우 temp_debt_dict에 추가한다.
             if all_tree[current_mod]['info'][tempsub]['ports'][tempports] in all_tree[current_mod]['info']['input'] or all_tree[current_mod]['info'][tempsub]['ports'][tempports] in all_tree[current_mod]['info']['output']:
                 if current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports] not in temp_debt_dict:
-
                     temp_debt_dict.update({current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]:list()})
                 for kvalue in debt_group[ivalue]:
                     if kvalue not in temp_debt_dict[current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]]:
                         temp_debt_dict[current_mod+'/'+all_tree[current_mod]['info'][tempsub]['ports'][tempports]].append(kvalue)
-                
+            
+            #### 해당 ivalue의 tempport가 상위 module인 current_mod에서 상수와 연결되는 경우, net_group의 constant0 혹은 constant1에 해당 tempport를 추가
             elif all_tree[current_mod]['info'][tempsub]['ports'][tempports]=='1\'b0':
                 if 'constant0' not in net_group:
                     net_group.update({'constant0':list()})
                 for kvalue in debt_group[ivalue]:
                     if kvalue not in net_group['constant0']:
                         net_group['constant0'].append(kvalue)
-
             elif all_tree[current_mod]['info'][tempsub]['ports'][tempports]=='1\'b1':
                 if 'constant1' not in net_group:
                     net_group.update({'constant1':list()})
@@ -713,30 +733,34 @@ def get_tree(All,diff):
                     if kvalue not in net_group['constant1']:
                         net_group['constant1'].append(kvalue)
             
-
+        #### debt_group을 temp_debt_dict로 최신화
         debt_group=copy.deepcopy(temp_debt_dict)
 
+        #### all_tree에서 submodule이 없는 module만 취급하여 해당 module에서의 wire_net은 net_group에 추가, input_net과 output_net은 debt_group에 추가한 후,
+        #### 해당 module을 submodule로 갖는 상위 module들의 submodule_list에서 해당 module을 삭제한 후, 해당 module을 all_tree에서 삭제한다. (top_module과 top_module의 submodule들은 고려하지 않는다.)
         for ivalue in all_tree:
+            #### ivalue 가 top_module혹은 top_module의 submodule이 아닌 경우 진행, counting: 반복문을 수행하는 ivalue의 갯수
             if len(all_tree[ivalue]['submodule'])==0 and '/' in ivalue:
                 counting=counting+1
+                #### all_tree에서 삭제할 ivalue 를 will_del이라는 list에 추가한다.
                 will_del.append(ivalue)
                 for kvalue in all_tree[ivalue]['info']['components_counts']:
                     for tvalue in all_tree[ivalue]['info'][kvalue]['ports']:
 
+                        #### 해당 ivalue의 임의의 component의 임의의 port가 wire_net에 연결된 경우, net_group에 해당 ivalue의 component와 port를 추가
                         if 'wire' in all_tree[ivalue]['info']:
-
                             if all_tree[ivalue]['info'][kvalue]['ports'][tvalue] in all_tree[ivalue]['info']['wire']:
                                 if ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue] not in net_group:
                                     net_group.update({ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]:list()})
-                                
                                 net_group[ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]].append(ivalue+'/'+kvalue+' '+tvalue)
 
-
+                        #### 해당 ivalue의 임의의 component의 임의의 port가 input_net 혹은 output_net에 연결된 경우, debt_group에 해당 ivalue의 component와 port를 추가
                         if all_tree[ivalue]['info'][kvalue]['ports'][tvalue] in all_tree[ivalue]['info']['input'] or all_tree[ivalue]['info'][kvalue]['ports'][tvalue] in all_tree[ivalue]['info']['output']:
                             if ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue] not in debt_group:
                                 debt_group.update({ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]:list()})
                             debt_group[ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]].append(ivalue+'/'+kvalue+' '+tvalue)
                         
+                        #### 해당 ivalue의 임의의 component의 임의의 port가 상수에 연결된 경우 net_group의 constant0 혹은 constant1에 추가
                         elif all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b0':
                             if 'constant0' not in net_group:
                                 net_group.update({'constant0':list()})
@@ -749,44 +773,56 @@ def get_tree(All,diff):
                             if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant1']:
                                 net_group['constant1'].append(ivalue+'/'+kvalue+' '+tvalue)
         
+        #### 분석이 끝난, 현재 all_tree에서 submodule이 없는 module들을 all_tree에서 제거하고,submodule의 리스트에 해당 module을 가지는 특정 상위 module의 submodule의 리스트에 해당 module을 제거
         for ivalue in will_del:
             del all_tree[ivalue]
             del all_tree[ivalue.split('/'+ivalue.split('/')[-1])[0]]['submodule'][ivalue.split('/')[-1]]
 
+        #### all_tree에 top_module의 submodule을 제외한 다른 module이 존재하지 않을 경우 break을 통해 while문을 벗어난다.
         if counting==0:
             break
 
 ######################## top module의 sub module 처리
     
+
     temp_debt_dict=dict()
+    #### top_module의 submodule들 중 임의의 module애 대해서 debt_group의 ivalue 가 해당 module의 wire_net에 연결되는 경우, net_group에 추가, input_net이나 output_net에 연결된 경우 temp_debt_dict에 추가
     for ivalue in debt_group:
+        #### wire_net에 해당 ivalue가 연결된 경우 net_group에 해당 ivalue의 원소들을 추가
         if 'wire' in all_tree[ivalue.split('/')[0]]['info']:
             if ivalue.split('/')[-1] in all_tree[ivalue.split('/')[0]]['info']['wire']:
                 if ivalue not in net_group:
                     net_group.update({ivalue:list()})
                 net_group[ivalue].extend(debt_group[ivalue])
         
+        #### input_net이나 output_net에 해당 ivalue가 연결된 경우 temp_debt_dict에 해당 ivalue의 원소들을 추가
         if ivalue.split('/')[-1] in all_tree[ivalue.split('/')[0]]['info']['input'] or ivalue.split('/')[-1] in all_tree[ivalue.split('/')[0]]['info']['output']:
             if ivalue not in temp_debt_dict:
                 temp_debt_dict.update({ivalue:debt_group[ivalue]})
             temp_debt_dict[ivalue].extend(debt_group[ivalue])
-        
-    debt_group=temp_debt_dict
+    
+    #### debt_group을 temp_debt_dict로 최신화
+    debt_group=copy.deepcopy(temp_debt_dict)
 
+    #### top_module의 submodule에 대한 분석
     for ivalue in all_tree:
         for kvalue in all_tree[ivalue]['info']['components_counts']:
             for tvalue in all_tree[ivalue]['info'][kvalue]['ports']:
+                #### 임의의 top_module의 submodule의 임의의 component의 port가 wire_net에 연결된 경우, net_group에 해당 ivalue의 component와 port를 추가
                 if 'wire' in all_tree[ivalue]['info']:
                     if all_tree[ivalue]['info'][kvalue]['ports'][tvalue] in all_tree[ivalue]['info']['wire']:
                         if ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue] not in net_group:
                             net_group.update({ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]:list()})
                         net_group[ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]].append(ivalue+'/'+kvalue+' '+tvalue)
                 
+                #### 임의의 top_module의 submodule의 임의의 component의 port가 input_net 혹은 output_net에 연결된 경우, debt_group에 해당 ivalue의 component와 port를 추가
                 if all_tree[ivalue]['info'][kvalue]['ports'][tvalue] in all_tree[ivalue]['info']['input'] or all_tree[ivalue]['info'][kvalue]['ports'][tvalue] in all_tree[ivalue]['info']['output']:
                     if ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue] not in debt_group:
                         debt_group.update({ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]:list()})
                     debt_group[ivalue+'/'+all_tree[ivalue]['info'][kvalue]['ports'][tvalue]].append(ivalue+'/'+kvalue+' '+tvalue)
 
+
+                #### 해당 ivalue의 임의의 component의 임의의 port가 상수에 연결된 경우 net_group의 constant0 혹은 constant1에 추가
                 elif all_tree[ivalue]['info'][kvalue]['ports'][tvalue]=='1\'b0':
                     if 'constant0' not in net_group:
                         net_group.update({'constant0':list()})
@@ -799,10 +835,10 @@ def get_tree(All,diff):
                     if ivalue+'/'+kvalue+' '+tvalue not in net_group['constant1']:
                         net_group['constant1'].append(ivalue+'/'+kvalue+' '+tvalue)
 
-
 ######################## top module 처리
+    #### debt_group이 top_module의 wire_net에 연결된 경우 net_group에 추가, input_net 혹은 output_net에 연결된 경우, 해당 net의 이름으로 net_group에 추가
     for ivalue in debt_group:
-
+        #### debt_group에서 해당 ivalue가 wire_net에 연결된 경우, net_group에 추가
         if 'wire' in All[top_module]:
             if All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] in All[top_module]['wire']:
                 if All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] not in net_group:
@@ -812,6 +848,7 @@ def get_tree(All,diff):
                     if kvalue not in net_group[All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]]:
                         net_group[All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]].append(kvalue)
 
+        #### debt_group에서 해당 ivalue가 input_net 혹은 output_net에 연결된 경우, net_group에 추가
         if All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] in All[top_module]['input'] or All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] in All[top_module]['output']:
             if All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]] not in net_group:
                 net_group.update({All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]:list()})
@@ -820,10 +857,11 @@ def get_tree(All,diff):
                 if kvalue not in net_group[All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]]:
                     net_group[All[top_module][ivalue.split('/')[0]]['ports'][ivalue.split('/')[1]]].append(kvalue)
 
-
+    #### top_module에 있는 component들을 처리
     for ivalue in All[top_module]['components_counts']:
         for kvalue in All[top_module][ivalue]['ports']:
 
+            #### 임의의 component의 port가 상수값에 연결된 경우 net_group의 constant0 혹은 constant1에 component와 port를 추가
             if All[top_module][ivalue]['ports'][kvalue]=='1\'b0':
                 if 'constant0' not in net_group:
                     net_group.update({'constant0':list()})
@@ -837,111 +875,92 @@ def get_tree(All,diff):
                 if ivalue+' '+kvalue not in net_group['constant1']:
                     net_group['constant1'].append(ivalue+' '+kvalue)
                 continue
-
+            
+            #### 임의의 component의 port가 연결된 net이 net_group에 없다면 해당 net을 net_group에 추가한 후, 해당 net에 해당 component의 port를 추가
             if All[top_module][ivalue]['ports'][kvalue] not in net_group:
                 net_group.update({All[top_module][ivalue]['ports'][kvalue]:list()})
             net_group[All[top_module][ivalue]['ports'][kvalue]].append(ivalue+' '+kvalue)
 
 
-########################################################################################################################################################################## assign 처리
+######################## assign 처리
     assign_temp=dict()
+    #### net_group에 임의의 net에 특정 component가 'assign_'으로 시작하고 '_assign_'이라는 문자열을 가지며, 해당 port가 'A'인 net을 assign_temp에 추가한다.
     for ivalue in net_group:
         for kvalue in net_group[ivalue]:
             if kvalue.split('/')[-1].startswith('assign_') and '_assign_' in kvalue.split('/')[-1] and kvalue.split(' ')[1]=='A':
                 assign_temp.update({kvalue.split(' ')[0]:ivalue})
 
     checking_list=dict()
+    #### checking_list에 assign으로 정의 되었던 net이 쓰인 module과 해당 module에서 assign구문에 사용된 net들과 assign이 어떻게 묶였는지에 대한 딕셔너리 생성
     for ivalue in assign_temp:
         temp_assign=ivalue.split('/')[-1]
+        #### assign_temp에서의 ivalue에 assign의 좌변을 first_assign, 우변을 second_assign으로 취급
         first_assign=temp_assign.split('_assign_')[0].split('assign_')[1]
         second_assign=temp_assign.split('_assign_')[1]
+        #### 해당 assign구문이 쓰인 module을 checking_list에 추가
         if ivalue.split(ivalue.split('/')[-1])[0] not in checking_list:
             checking_list.update({ivalue.split(ivalue.split('/')[-1])[0]:dict({'wires':list(),'groups':list()})})
+        #### first_assign과 second_assign이 checking_list의 해당 module의 wire에 존재하지 않을 경우 first_assign 혹은 second_assign을 추가
         if first_assign not in checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires']:
             checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires'].append(first_assign)
         if second_assign not in checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires']:
             checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['wires'].append(second_assign)
+        #### checking_list에서 해당 module의 group에 [first_assign,second_assign]을 추가
         checking_list[ivalue.split(ivalue.split('/')[-1])[0]]['groups'].append([first_assign,second_assign])
 
 
-
     sum_assign=dict()
+    #### checking_list을 참고하여 checking_list에 있는 module의 group들중, 합집합을 가지는 group을 합쳐서 sum_assign에 저장
     for ivalue in checking_list:
-        previous_wire_counts=int()
-        will_exterminate_group=list()
-        will_add_wire_groups=list()
-        will_delete_group=list()
-        while len(checking_list[ivalue]['wires'])!=0:
-            che='che'
-            if len(will_add_wire_groups)!=0:
-                sum_assign[ivalue].extend([will_add_wire_groups])
+        if ivalue not in sum_assign:
+            sum_assign.update({ivalue:list()})
 
-            for kvalue in will_exterminate_group:
-                if kvalue in checking_list[ivalue]['wires']:
-                    checking_list[ivalue]['wires'].remove(kvalue)
-            
-            for kvalue in will_delete_group:
-                if kvalue in checking_list[ivalue]['groups']:
-                    checking_list[ivalue]['groups'].remove(kvalue)
-            
+        #### set_list에 해당 ivalue의 group에 있는 리스트들을 set으로 취급하여 세팅
+        set_list=list()
+        for idx in range(len(checking_list[ivalue]['groups'])):
+            set_list.append(set(checking_list[ivalue]['groups'][idx]))
+        #### set으로 합집합이 만들어지지 않는 경우가 될때까지 while문 실행
+        while True:
+            #### 새로 업데이트할 new_set_list 초기화
+            new_set_list=list()
+            #### 한번이라도 checking_break이 continue가 되면 while문을 다시 반복한다.
+            checking_break=str()
+            for idx in range(len(set_list)):
+                for kdx in range(len(set_list)):
+                    if kdx<=idx:
+                        continue
+                    #### 하나의 set과 다른 set이 합집합을 만드는 경우가 있을 경우 checking_break는 continue가 되고, new_set_list에 합집합을 만들어서 저장
+                    if len(set_list[idx]&set_list[kdx])!=0:
+                        checking_break='continue'
+                        new_set_list.append(set_list[idx]|set_list[kdx])
+            #### 합집합이 만들어지는 경우가 없을 경우 break으로 while문을 나간다.
+            if checking_break=='':
+                break
+            set_list=copy.deepcopy(new_set_list)
+        #### set_list에 있는 집합을 list로 해당 ivalue에 대해 저장
+        for idx in range(len(set_list)):
+            sum_assign[ivalue].append(list(set_list[idx]))
 
-            if ivalue not in sum_assign:
-                sum_assign.update({ivalue:list()})
-            will_exterminate_group=list()
-            will_add_wire_groups=list()
-            for kdx in range(len(checking_list[ivalue]['groups'])):
-                if len(sum_assign[ivalue])==0:
-                    sum_assign[ivalue].append(checking_list[ivalue]['groups'][kdx])
-                    will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
-                    will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
-                    will_delete_group.append(checking_list[ivalue]['groups'][kdx])
-
-                else:
-                    for tdx in range(len(sum_assign[ivalue])):
-                        if checking_list[ivalue]['groups'][kdx][0] in sum_assign[ivalue][tdx] and checking_list[ivalue]['groups'][kdx][1] not in sum_assign[ivalue][tdx]:
-                            che='ehc'
-                            sum_assign[ivalue][tdx].append(checking_list[ivalue]['groups'][kdx][1])
-                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
-                            will_delete_group.append(checking_list[ivalue]['groups'][kdx])
-                        elif checking_list[ivalue]['groups'][kdx][1] in sum_assign[ivalue][tdx] and checking_list[ivalue]['groups'][kdx][0] not in sum_assign[ivalue][tdx]:
-                            che='ehc'
-                            sum_assign[ivalue][tdx].append(checking_list[ivalue]['groups'][kdx][0])
-                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
-                            will_delete_group.append(checking_list[ivalue]['groups'][kdx])
-                        elif checking_list[ivalue]['groups'][kdx][0] in sum_assign[ivalue][tdx] and checking_list[ivalue]['groups'][kdx][1] in sum_assign[ivalue][tdx]:
-                            che='ehc'
-                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
-                            will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
-                            will_delete_group.append(checking_list[ivalue]['groups'][kdx])
-                        else:
-                            if len(checking_list[ivalue]['wires'])!=previous_wire_counts:
-                                che='ehc'
-                                continue
-
-                    if che=='che':
-                                will_add_wire_groups=[checking_list[ivalue]['groups'][kdx][0],checking_list[ivalue]['groups'][kdx][1]]
-                                will_delete_group.append(checking_list[ivalue]['groups'][kdx])
-                                will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][0])
-                                will_exterminate_group.append(checking_list[ivalue]['groups'][kdx][1])
-                                break
-
-            previous_wire_counts=len(checking_list[ivalue]['wires'])
-
-    
+    #### assign 구문이 쓰인 모듈에 대해서 존재하는 assign들의 group중에 assign_temp에 저장된 net들을 group_assign으로 하나의 그룹에 모아준다.
+    #### group_assign초기화 : assign구문이 쓰인 모듈에 존재하는 assign집합의 수만큼 해당 module에 빈 리스트를 추가한다.
     group_assign=dict()
     for ivalue in sum_assign:
         group_assign.update({ivalue:list()})
         for tdx in range(len(sum_assign[ivalue])):
             group_assign[ivalue].append([])
 
+    #### kvalue모듈에서 assign구문으로 합쳐진 tdx번째 그룹에 해당하는 net들을 group_assign에 모아준다.
     for ivalue in assign_temp:
         for kvalue in sum_assign:
             for tdx in range(len(sum_assign[kvalue])):
+                #### kvalue 모듈에 tdx번째 assign 집합에 해당 net이 포함되면 group_assign에 kvalue 모듈의 tdx번째 리스트에 추가한다.
                 if ivalue.split(ivalue.split('/')[-1])[0]==kvalue and ivalue.split('/')[-1].split('_assign_')[0].split('assign_')[1] in sum_assign[kvalue][tdx] \
                     and ivalue.split('/')[-1].split('_assign_')[1].split(' ')[0] in sum_assign[kvalue][tdx]:
                     group_assign[kvalue][tdx].append(assign_temp[ivalue])
 
+
     net_group_assign=dict()
+    #### group_assign에 저장된 하나의 그룹을 이루는 net들이 가지는 원소들을 net_group_assign에 모두 저장 assign_group_+temp_number로 해당 그룹명을 바꾼다.
     for ivalue in group_assign:
         net_group_assign.update({ivalue:dict()})
 
@@ -951,24 +970,31 @@ def get_tree(All,diff):
             temp_number=temp_number+1
             
             for kdx in range(len(group_assign[ivalue][tdx])):
+                #### 만약 해당 그룹에 top_module의 net이 있으면 그룹명을 해당 net으로 바꾼다.
                 if '/' not in group_assign[ivalue][tdx][kdx]:
                     name_of_assign=group_assign[ivalue][tdx][kdx]
                     temp_number=temp_number-1
             net_group_assign[ivalue].update({name_of_assign:[]})
 
+            #### 해당 그룹명에 각 net이 가지는 원소들을 해당 그룹에 추가
             for kdx in range(len(group_assign[ivalue][tdx])):
                 for rvalue in net_group[group_assign[ivalue][tdx][kdx]]:
                     if rvalue not in net_group_assign[ivalue][name_of_assign]:
                         net_group_assign[ivalue][name_of_assign].append(rvalue)
 
+
     will_add_net=dict()
+    #### net_group에 더할 will_add_net을 만든다.
     for ivalue in net_group_assign:
         for kvalue in net_group_assign[ivalue]:
+            #### kvalue module의 임의의 assign 그룹명이 assign_group_으로 시작할 경우 해당 module 이름 + assign_group_ + temp_number로 저장
             if kvalue.startswith('assign_group_'):
                 will_add_net.update({ivalue+kvalue:net_group_assign[ivalue][kvalue]})
+            #### 아닐 경우 해당 그룹명 그대로 저장
             else:
                 will_add_net.update({kvalue:net_group_assign[ivalue][kvalue]})
 
+    #### will_add_net의 각 net의 원소들 중 marking을 위해 존재했던 assign_A_assign_B A 라는 가상의 component와 port를 지워준다.
     for ivalue in will_add_net:
         will_del_list=list()
         for kvalue in will_add_net[ivalue]:
@@ -977,48 +1003,62 @@ def get_tree(All,diff):
         for kvalue in will_del_list:
             will_add_net[ivalue].remove(kvalue)
     
+    #### group_assign에 저장되어 있던 net들은 net_group에서 지운다.
     for ivalue in group_assign:
         for kdx in range(len(group_assign[ivalue])):
             for tdx in range(len(group_assign[ivalue][kdx])):
                 del net_group[group_assign[ivalue][kdx][tdx]]
 
     real_net_group=copy.deepcopy(net_group)
+    #### net_group에 will_add_net을 추가함으로서 assign 구문에 의해 합쳐지는 집합들을 net_group에 최신화
     for idx,ivalue in enumerate(will_add_net):
+        #### net_group에는 assignModule에 idx번째 net을 추가
         net_group.update({'assignModule'+str(idx):will_add_net[ivalue]})
         real_net_group.update({ivalue:will_add_net[ivalue]})
 
-    
 
-########################################################################################################################################################################## checking 영역
+######################## checking 영역
 
-
+    #### net_group에 존재하는 모든 components들과 port의 쌍을 checking_net_components에 저장하고, component의 이름만 checking_net_components에 저장한다.
     checking_net_components=list()
     checking_only_components=dict()
     for ivalue in net_group:
         for kvalue in net_group[ivalue]:
 
             checking_net_components.append(kvalue)
-            checking_only_components.update({kvalue.split(' ')[0]:str('tpmglwns1!@!@')})
+            checking_only_components.update({kvalue.split(' ')[0]:str('')})
 
-    print(len(checking_net_components))
-    print(len(checking_only_components))
-    print()
+    #### 만약 components_list_with_ports!=checking_net_components 이라면 몇 component들의 port들이 누락되었거나 더 많이 net에 쓰였다.
+    if len(components_list_with_ports)>len(checking_net_components):
+        print('Error : some components are not in net_group components_list_with_ports :',len(components_list_with_ports),'checking_net_components :',len(checking_net_components))
+    elif len(components_list_with_ports)<len(checking_net_components):
+        print('Error : some components are not in definiftion components_list_with_ports :',len(components_list_with_ports),'checking_net_components :',len(checking_net_components))
 
-    with open('../../data/'+diff+'/'+'checking_net_components.json','w') as fw:
+    #### 만약 only_components!=checking_only_components 이라면 몇 component들이 누락되었거나 더 많이 net에 쓰였다.
+    if len(only_components)>len(checking_only_components):
+        print('Error : some components are not in net_group only_components :',len(only_components),'checking_only_components :',len(checking_only_components))
+    elif len(only_components)<len(checking_only_components):
+        print('Error : some components are not in definiftion only_components :',len(only_components),'checking_only_components :',len(checking_only_components))
+
+
+    #### 사용된 MACRO와 standard_cell들을 리스트 형태로 json파일로 저장
+    with open(upper_directory+'/'+the_v+'/checking_net_components.json','w') as fw:
         json.dump(checking_net_components,fw,indent=4)
     fw.close()
-    with open('../../data/'+diff+'/'+'components_list_with_ports.json','w') as fw:
+    #### 사용된 MACRO의 각 port와 standard_cell의 각 port들을 리스트 형태로 json파일로 저장
+    with open(upper_directory+'/'+the_v+'/components_list_with_ports.json','w') as fw:
         json.dump(components_list_with_ports,fw,indent=4)
     fw.close()
 
-
+    #### net_group에서 쓰인 components들의 id를 checking_only_components에 추가해준다. 만약 external_pin의 경우 PIN +pin_name:external_[direction]_PIN으로 추가해준다.
     for ivalue in net_group:
         for kvalue in net_group[ivalue]:
             if '/' in kvalue:
                 checking_only_components[kvalue.split(' ')[0]]=temp_all_tree[kvalue.split('/'+kvalue.split('/')[-1])[0]]['info'][kvalue.split('/')[-1].split(' ')[0]]['id']
             else:
                 checking_only_components[kvalue.split(' ')[0]]=All[top_module][kvalue.split('/')[-1].split(' ')[0]]['id']
-                
+        
+        #### PIN의 경우 top_module의 input_net이거나 output_net의 경우이다.
         if ivalue in All[top_module]['input']:
             net_group[ivalue].append('PIN '+ivalue)
             checking_only_components.update({'PIN '+ivalue:'external_input_PIN'})
@@ -1026,8 +1066,7 @@ def get_tree(All,diff):
             net_group[ivalue].append('PIN '+ivalue)
             checking_only_components.update({'PIN '+ivalue:'external_output_PIN'})
 
-
-
+    #### assign구문에 의해 만들어진 net에 PIN의 내용이 있을겅우에도 PIN에 대한 id를 추가해준다.
     for idx,ivalue in enumerate(will_add_net):
         if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
             if 'PIN '+ivalue not in net_group['assignModule'+str(idx)]:
@@ -1040,54 +1079,58 @@ def get_tree(All,diff):
             else:
                 checking_only_components.update({'PIN '+ivalue:'external_output_PIN'})
 
-    with open('../../data/'+diff+'/'+'checking_id_components.json','w') as fw:
+    #### 사용된 components들의 id에 대한 정보를 json파일로 저장한다.
+    with open(upper_directory+'/'+the_v+'/checking_id_components.json','w') as fw:
         json.dump(checking_only_components,fw,indent=4)
     fw.close()
 
 
+    #### 상위모듈들은 제거하여 각 module의 name이 아닌 module의 id를 각 components의 이름으로 갖는 딕셔너리 저장
     checking_id_components_modified=dict()
     for ivalue in checking_only_components:
+        #### 해당 component가 PIN일 경우 그대로 PIN의 이름으로 저장한다.
         if ivalue.startswith('PIN '):
             checking_id_components_modified.update({ivalue:checking_only_components[ivalue]})
+        #### 해당 component가 PIN이 아닌 경우 해당 component가 선언된, 해당 component의 이름에서 가장 하위 module이 되는 module의 id와 component의 이름으로 저장한다.
         else:
+            #### 해당 component의 이름 : temp_components
             temp_components=ivalue.split('/')[-1]
+            #### '/'이 있다면 top_module의 component가 아니므로 가장 하위의 module을 찾는다.
             if  '/' in ivalue:
                 templist=temp_module=ivalue.split('/'+temp_components)[0].split('/')
+                #### 해당 component가 선언된, 해당 module의 id : temp_module
                 temp_module=str()
                 for kdx in range(len(templist)):
                     if kdx==0:
                         temp_module=All[top_module][templist[kdx]]['id']
                     else:
                         temp_module=All[temp_module][templist[kdx]]['id']
+                #### 해당 temp_module+'/'+temp_components로 해당 component의 이름을 다르게 저장한다.
                 checking_id_components_modified.update({temp_module+'/'+temp_components:checking_only_components[ivalue]})
+            #### top_module에서 선언된 component들은 top_module+'/'+temp_components로 해당 component의 이름을 다르게 저장한다.
             else:
                 checking_id_components_modified.update({top_module+'/'+temp_components:checking_only_components[ivalue]})
 
-    with open('../../data/'+diff+'/'+'checking_id_components_modified.json','w') as fw:
+    #### 이름이 바뀐 component들의 집합을 json파일로 저장
+    with open(upper_directory+'/'+the_v+'/checking_id_components_modified.json','w') as fw:
         json.dump(checking_id_components_modified,fw,indent=4)
     fw.close()
 
-
+    #### real_net_group에서의 원소 중에 임의의 component가 외부 PIN일 경우, 해당 net에 외부 PIN을 저장한다.
     for ivalue in real_net_group:
         if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
             if 'PIN '+ivalue not in real_net_group[ivalue]:
                 real_net_group[ivalue].append('PIN '+ivalue)
 
-        #if len(net_group[ivalue])==1:
-        #    if '/' not in ivalue:
-        #        if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
-        #            continue
-        #        else:
-        #            print(ivalue,net_group[ivalue],'TTTTT')
-        #    else:
-        #        print(ivalue,net_group[ivalue])
+    #### 구한 net의 총 갯수를 화면에 출력
+    print('net_counts :',len(net_group))
 
-
-    print(len(net_group))
-    print()
+    #### net_group에서 쓰이는 net의 이름과 각 net의 원소들인 component들도 선언된 각 module의 id를 이름으로 갖는 딕셔너리 생성
     new_net_group=dict()
     for ivalue in net_group:
+        #### conseq은 각 net의 새로운 이름이 된다. 해당 net이 온전히 선언되는 최하위 module의 id를 net이름으로 갖는다.
         conseq=str()
+        #### '/'가 있을 경우 최하위 module을 찾아서 conseq에 저장
         if '/' in ivalue:
             temp_nick=ivalue.split('/'+ivalue.split('/')[-1])[0].split('/')
             tempo=list()
@@ -1105,12 +1148,16 @@ def get_tree(All,diff):
                 else:
                     conseq=conseq+'/'+tempo[kdx]
             conseq=conseq+'/'+ivalue.split('/')[-1]
+        #### '/'이 없을 경우 ivalue를 conseq에 저장
         else:
             conseq=ivalue
+        #### new_net_group에 각각의 conseq을 저장
         new_net_group.update({conseq:list()})
 
         for kvalue in net_group[ivalue]:
+            #### 각 net의 구성요소들도 conseq과 마찬가지로 선언된 최하위의 module의 id+'/'+components_id+' '+port의 형태로 result로 저장
             result=str()
+            #### '/'이 있을 경우 해당 component가 선언된 최하위 module을 찾아 result에 저장
             if '/' in kvalue:
                 temp_nick=kvalue.split('/'+kvalue.split('/')[-1])[0].split('/')
                 tempo=list()
@@ -1128,32 +1175,43 @@ def get_tree(All,diff):
                     else:
                         result=result+'/'+tempo[kdx]
                 result=result+'/'+kvalue.split('/')[-1]
+            #### '/'이 없을 경우 result에 kvalue를 저장
             else:
                 result=kvalue
+            #### 각 result를 new_net_group의 conseq인 net에 추가
             new_net_group[conseq].append(result)
 
 
-    jun=dict()
+    #### new_net_group에서의 net이름은 assignModule이지만 해당 net에 외부 PIN이 있을 경우, net의 이름을 해당 외부 PIN으로 바꿔준다.
+    modified_group=dict()
     for ivalue in new_net_group:
+        #### assignModule 혹은 constant0 혹은 constant1 혹은 top_module의 net인 경우
         if '/' not in ivalue:
             che=str()
+            #### 해당 net에 PIN이 있다면 che는 'che'로 저장
             for kvalue in new_net_group[ivalue]:
                 if 'PIN ' in kvalue:
                     che='che'
                     break
+            #### 외부 PIN이 있을 경우 (assign그룹의 net이 아닌경우)
             if che=='che' and 'assignModule' not in ivalue:
-                jun.update({'PIN '+ivalue:new_net_group[ivalue]})
-            else:
-                if 'assignModule' not in ivalue and ivalue!='constant0' and ivalue!='constant1':
-                    jun.update({top_module+'/'+ivalue:new_net_group[ivalue]})
-                else:
-                    jun.update({ivalue:new_net_group[ivalue]})
-        else:
-            jun.update({ivalue.split('/'+ivalue.split('/')[-1])[0].split('/')[-1]+'/'+ivalue.split('/')[-1]:new_net_group[ivalue]})
+                modified_group.update({'PIN '+ivalue:new_net_group[ivalue]})
 
-    for ivalue in jun:
+            #### 외부 PIN이 없을 경우
+            else:
+                #### assignModule도 아니고, constant0와 constant1도 아니면 top_module의 wire_net이다.
+                if 'assignModule' not in ivalue and ivalue!='constant0' and ivalue!='constant1':
+                    modified_group.update({top_module+'/'+ivalue:new_net_group[ivalue]})
+                #### assignModule의 경우와 constant0, constant1의 경우 그대로 저장한다.
+                else:
+                    modified_group.update({ivalue:new_net_group[ivalue]})
+        #### '/'이 있을 경우 modified_group에 최하위 module과 해당 module에서의 id로 net을 저장한다.
+        else:
+            modified_group.update({ivalue.split('/'+ivalue.split('/')[-1])[0].split('/')[-1]+'/'+ivalue.split('/')[-1]:new_net_group[ivalue]})
+
+    for ivalue in modified_group:
         temp=list()
-        for kvalue in jun[ivalue]:
+        for kvalue in modified_group[ivalue]:
             if kvalue.startswith('PIN '):
                 temp.append(kvalue)
             elif '/' not in kvalue:
@@ -1162,13 +1220,15 @@ def get_tree(All,diff):
                 last_slash=kvalue.split('/')[-1]
                 previous_slash=kvalue.split('/'+last_slash)[0].split('/')[-1]
                 temp.append(previous_slash+'/'+last_slash)
-        jun[ivalue]=temp
+        modified_group[ivalue]=temp
 
-    return [jun,real_net_group]
+    return [modified_group,real_net_group]
 
 
 
-#### submodule아 있을 경우 All에 업데이트를 하여 모든 submodule에 대해 tree 구성
+
+
+#### submodule아 있을 경우 All에 최신화를 하여 모든 submodule에 대해 tree 구성
 def get_add_mod(All,upper_module,info):
     
     for ivalue in info[All[upper_module]['module']]['module_counts']:
@@ -1206,7 +1266,6 @@ def checking_list_func(All,ivalue,toptop):
 
 
 
-
 if __name__=="__main__":
     #get_tree(str())
 
@@ -1220,14 +1279,21 @@ if __name__=="__main__":
 
     kkk=get_module_dict(file)
 
-    mmm=get_tree(kkk,difficulty)
+    mmm=get_tree(kkk,file)
 
-    print('############')
+    #### 해당 verilog 파일의 파일명: where_the_v+'.v'
+    where_the_v=file.split('.v')[0]
+    #### id와 net정보를 저장할 새 디렉토리 : upper_directory+'/'+the_v
+    the_v=where_the_v.split('/')[-1]
+    upper_directory=file.split('/'+the_v+'.v')[0]
+    #### 해당 verilog 파일의 위치에 하위 디렉토리가 없을 경우 생성
+    if the_v not in os.listdir(upper_directory):
+        os.mkdir(upper_directory+'/'+the_v)
 
-    with open('../../data/'+difficulty+'/'+'nets_modified_by_june.json','w') as fw:
+    with open(upper_directory+'/'+the_v+'/nets_modified_by_02.json','w') as fw:
         json.dump(mmm[0],fw,indent=4)
     fw.close()
-    with open('../../data/'+difficulty+'/'+'nets_from_june.json','w') as fw:
+    with open(upper_directory+'/'+the_v+'/nets_from_02.json','w') as fw:
         json.dump(mmm[1],fw,indent=4)
     fw.close()
 

@@ -20,7 +20,7 @@ def compare_1(first,second):
 
 
     tt=int()
-    test=dict()
+    test1=dict()
     #### assignModule을 제외한 나머지 net들의 구성요소들이 own_file과 비교하여 other_file에 다 있는지, 없다면 몇개가 없는지 화면에 출력
     for ivalue in own_file:
         if ivalue.startswith('assignModule'):
@@ -28,11 +28,12 @@ def compare_1(first,second):
         #### assignModule이 아닌 net의 경우
         for kvalue in own_file[ivalue]:
             if kvalue not in other_file[ivalue]:
-                if ivalue not in test:
-                    test.update({ivalue:[]})
-                test[ivalue].append(kvalue)
+                if ivalue not in test1:
+                    test1.update({ivalue:[]})
+                test1[ivalue].append(kvalue)
                 tt=tt+1
     #### 누락된 components 및 ports의 수 tt를 화면에 출력
+    temp.update({'test1':test1})
     print(tt)
     tt=int()
     test=dict()
@@ -48,6 +49,7 @@ def compare_1(first,second):
                 test[ivalue].append(kvalue)
                 tt=tt+1
     #### 누락된 components 및 ports의 수 tt를 화면에 출력
+    temp.update({'test2':test})
     print(tt)
 
     return temp
@@ -62,9 +64,9 @@ if __name__=="__main__":
     diff='easy'
     diff=sys.argv[1]
 
-    file_from_other_computer='../../data/'+diff+'/net_list_'+diff+'.json'
-    file_in_this_computer='../../data/'+diff+'/'+diff+'/nets_modified_by_02.json'
-    file_not_include='../../data/'+diff+'/'+diff+'/not_included.json'
+    file_from_other_computer='../../temp_data/verilog/'+diff+'/net_list_'+diff+'.json'
+    file_in_this_computer='../../temp_data/verilog/'+diff+'/nets_modified_by_02.json'
+    file_not_include='../../temp_data/verilog/'+diff+'/not_included.json'
     All=compare_1(file_from_other_computer,file_in_this_computer)
     with open(file_not_include,'w') as fw:
         json.dump(All,fw,indent=4)

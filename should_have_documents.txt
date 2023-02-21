@@ -34,35 +34,46 @@
 	/printing_path.py
 	/test-1.py
 
-/lib_parsing
-	/change_conditionlist.py
-	/change_nor.py
-	/get_lib_directory.py
-	/get_lib_from_opensta_example.py
-	/get_lib_from_superblue16.py
-	/lib_medium.py
-	/lib_parsing_final.py
-	/lib_parsing_real.py
-	/make_table_for_shallow_sequential.py
-	/making_state_table.py
-	/os_medium_table.py
-	/parsing_naive_text.py
-	/test_lib.py
-	/test_test_parsing.py
-	/wire_load_model_saving.py
+!!lib_parsing
+-lib_parsing_real.py	-ing
+(lib파일을 parsing하여 하나의 lib파일이 있는 디렉토리에 lib파일명과 같은 하위 디렉토리 생성 후, 해당 디렉토리에 lib파일을 parsing하여 내용을 저장하는 코드)
 
-/read_DEF_LEF
-/draw_fixed_MACRO.py				-ing 	(superblue문제들에 MACRO들의 위치를 그림으로 출력하는 코드)
-							()
-/calc_distance_macro.py					
+-wire_load_model_saving.py (lib파일에서 wire_load_model에 대한 내용을 parsing하는 코드, lib_parsing_real의 코드 안에 수정하여 변경해야함)
+
+
+-test_test_parsing.py (lib파일의 주석처리하는 함수 테스트용, 삭제해야함)
+
+-lib_parsing_final.py (lib_parsing_real.py로 대체,삭제해야함)
+-test_lib.py (lib_parsing_real.py 실행 파일, 삭제해야함)
+-lib_medium.py (lib 파일 parsing 이전 버전, 삭제해야함)
+-os_medium_table.py (lib_medium.py 실행 파일, 삭제해야함)
+-parsing_native_text.py (lib파일에서 text파일로 쪼개는 파일, 삭제해야함)
+-making_state_table.py (lib파일에서 임의의 cell에 대한 statetable을 만드는 코드, 삭제해야함)
+
+-get_lib_directory.py (파일 및 디렉토리명을 수정하는 코드, 삭제해야함)
+-get_lib_from_opensta_example.py (example lib파일에 대해서 parsing하는 코드, 삭제해야함)
+-get_lib_from_superblue16.py (superblue lib파일에 대해서 parsing하는 코드, 삭제해야함)
+
+-change_conditionlist.py (lib파일의 output의 timing문의 when 문장에 대한 내용을 수정하는 코드, 삭제해야함)
+-change_nor.py (superblue 문제의 lib파일에서 nor소자의 output의 timing문의 when 문장에 대한 내용을 수정하는 코드, 삭제해야함)
+
+-make_table_for_shallow_sequential.py (example 문제의 lib파일에서의 DFF_X1과 DFF_X2의 소자와 combinational한 소자들의 대한 내용을 parsing하는 코드, 삭제해야함)
+
+
+
+
+
+
+!!read_DEF_LEF
+-draw_fixed_MACRO.py	-ing 	
+(superblue문제들에 MACRO들의 위치를 그림으로 출력하는 코드)
+
+-calc_distance_macro.py					
+
+
 
 !!verilog_parsing
--get_superblue_location.py (다른 디렉토리로 이동필요)
--make_temp_net_and_id_for_medium.py (다른 디렉토리로 이동필요)
--macro_relationship.py	-ing 	
-(각 MACRO끼리 하나의 net으로 이어지는 횟수와 다른 하나의 component를 중개로 이어지는 횟수를 정량화한 코드)
-(lef 파일이 있는 디렉토리에 해당 lef파일과 파일명이 같은 하위 디렉토리에 one_module_net_parsing.py의 출력인 temp_net.json과 temp_id.json가 있어야 하고, 해당 하위 디렉토리에 temp_macro_location.txt가 존재해야 한다. 해당 하위 디렉토리에 해당 lef파일과 파일명+_df_total_size.csv과 cost.txt를 저장)
-
+########################################################################################################################################################################################################
 -one_module_net_parsing.py	clear
 (모듈이 하나만 있는 verilog파일에 대해 net의 정보와 해당 net에 쓰이는 components들의 id에 대해 저장하는 코드)
 (입력파일은 verilog파일이고, 해당 verilog파일이 위치한 디렉토리에 verilog의 파일명과 같은 하위 디렉토리 생성 후, 해당 하위 디렉토리에 net에 대한 정보인 temp_net.json와 각 component의 id에 대한 정보인 temp_id.json을 저장)
@@ -74,4 +85,19 @@
 -double_checking.py	clear
 (모듈이 여러개가 있는 verilog파일에 대해 parsing한 방법이 여러가지인 경우, 각각의 net 파일을 비교하여 구성요소가 서로 빠짐없이 들어있는지 확인하는 코드)
 (입력파일은 net의 이름과 해당 net에 존재하는 component+' '+port로 구성된 딕션너리의 json파일이고 해당 파일들은 같은 디렉토리에 존재해야하며,두 파일의 누락된 component와 port을 해당 디렉토리에 not_included.json으로 저장한다.)
+
+-get_superblue_location.py (다른 디렉토리로 이동필요)
+
+-make_temp_net_and_id_for_medium.py (다른 디렉토리로 이동필요)
+
+-macro_relationship.py	-ing 	(다른 디렉토리로 이동필요)
+(각 MACRO끼리 하나의 net으로 이어지는 횟수와 다른 하나의 component를 중개로 이어지는 횟수를 정량화한 코드)
+(lef 파일이 있는 디렉토리에 해당 lef파일과 파일명이 같은 하위 디렉토리에 one_module_net_parsing.py의 출력인 temp_net.json과 temp_id.json가 있어야 하고, 해당 하위 디렉토리에 temp_macro_location.txt가 존재해야 한다. 해당 하위 디렉토리에 해당 lef파일과 파일명+_df_total_size.csv과 cost.txt를 저장)
+필요한 파일
+{die_area.txt
+temp_net.json
+temp_id.json
+naming.txt
+temp_macro_location.txt}
+
 

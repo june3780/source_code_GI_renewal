@@ -1033,22 +1033,19 @@ def get_tree(All,diff):
         print('Error : some components are not in net_group components_list_with_ports :',len(components_list_with_ports),'checking_net_components :',len(checking_net_components))
     elif len(components_list_with_ports)<len(checking_net_components):
         print('Error : some components are not in definiftion components_list_with_ports :',len(components_list_with_ports),'checking_net_components :',len(checking_net_components))
+    elif set(components_list_with_ports)!=set(checking_net_components):
+        print('Error : some_components are not in net_list or some_components in net_list which is not in verilog')
 
     #### 만약 only_components!=checking_only_components 이라면 몇 component들이 누락되었거나 더 많이 net에 쓰였다.
     if len(only_components)>len(checking_only_components):
         print('Error : some components are not in net_group only_components :',len(only_components),'checking_only_components :',len(checking_only_components))
     elif len(only_components)<len(checking_only_components):
         print('Error : some components are not in definiftion only_components :',len(only_components),'checking_only_components :',len(checking_only_components))
+    elif set(only_components)!=set(checking_only_components):
+        print('Error : some_components are not in net_list or some_components in net_list which is not in verilog')
 
 
-    #### 사용된 MACRO와 standard_cell들을 리스트 형태로 json파일로 저장
-    with open(upper_directory+'/'+the_v+'/checking_net_components.json','w') as fw:
-        json.dump(checking_net_components,fw,indent=4)
-    fw.close()
-    #### 사용된 MACRO의 각 port와 standard_cell의 각 port들을 리스트 형태로 json파일로 저장
-    with open(upper_directory+'/'+the_v+'/components_list_with_ports.json','w') as fw:
-        json.dump(components_list_with_ports,fw,indent=4)
-    fw.close()
+
 
     #### net_group에서 쓰인 components들의 id를 checking_only_components에 추가해준다. 만약 external_pin의 경우 PIN +pin_name:external_[direction]_PIN으로 추가해준다.
     for ivalue in net_group:
@@ -1273,7 +1270,7 @@ if __name__=="__main__":
     difficulty='medium' ##################### difficulty 는 easy 와 medium 두가지 경우가 있다.
     difficulty='easy'
     difficulty=sys.argv[1]
-    file='../../data/'+difficulty+'/'+difficulty+'.v'
+    file='../../temp_data/verilog/'+difficulty+'.v'
     #file='../../data/easy/easy.v'
     start=time.time()
 

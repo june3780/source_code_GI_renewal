@@ -1306,7 +1306,7 @@ if __name__=="__main__":
 
 
     lib_address='../../data/test_LIB_groups/'
-    lib_address='../../data/LIB_groups/'
+    lib_address='../../temp_data/lib/'
     lib_address=lib_address+checking
     #print(checking)
     #print('start')
@@ -1446,7 +1446,7 @@ if __name__=="__main__":
 
 
 
-
+############################################## 다른 파일로 코드 짜기
     elif sys.argv[1]=='24':
         get_lib_info_for_delay_v1(lib_address)
 

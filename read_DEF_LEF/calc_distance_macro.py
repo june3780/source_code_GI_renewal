@@ -5,6 +5,12 @@ from scipy.stats import norm
 
 
 def get_distance_with_macro(defdef,leflef,text):
+    #### 해당 verilog 파일의 파일명: where_the_def+'.v'
+    where_the_def=defdef.split('.def')[0]
+    #### id와 net정보를 저장할 새 디렉토리 : upper_directory+'/'+the_def
+    the_def=where_the_def.split('/')[-1]
+    upper_directory=defdef.split('/'+the_def+'.def')[0]
+    #### 해당 lef 파일의 위치에 하위 디렉토리가 없을 경우 생성
 
     def_unit=float()
     die_position=list()
@@ -86,7 +92,9 @@ def get_distance_with_macro(defdef,leflef,text):
 
     cell_dict=get_def_components(new_lines)
 
-
+    with open(upper_directory+'/'+the_def+'/components_with_orientation.json','w') as fw:
+        json.dump(cell_dict,fw,indent=4)
+    fw.close()
     '''new_lines=['']
     for idx in range(end_pin_idx-start_pin_idx+1):
         new_lines[-1]=new_lines[-1]+' '+lines[idx+start_pin_idx+1].replace('\n','').strip()
@@ -116,7 +124,7 @@ def get_distance_with_macro(defdef,leflef,text):
         each_macro_position=json.load(fw)
     fw.close()
 
-    with open(text,'r') as fw:
+    '''with open(text,'r') as fw:
         lines=fw.readlines()
     fw.close()
     ttt=float()
@@ -129,7 +137,7 @@ def get_distance_with_macro(defdef,leflef,text):
     
     ttt=ttt/len(lines)
     print()
-    print(ttt)
+    print(ttt)'''
 
     #print(json.dumps(cell_dict,indent=4))
 
@@ -375,7 +383,5 @@ if __name__=="__main__":
         print(ivalue)
 
 
-        temp_func(checking_lef.split(ivalue+'.lef')[0]+'calc_distance.txt')
-        #get_distance_with_macro(checking_def,checking_lef,checking_lef.split(ivalue+'.lef')[0]+'calc_distance.txt')
-        print()
-        break
+        #temp_func(checking_lef.split(ivalue+'.lef')[0]+'calc_distance.txt')
+        get_distance_with_macro(checking_def,checking_lef,checking_lef.split(ivalue+'.lef')[0]+'calc_distance.txt')

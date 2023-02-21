@@ -160,12 +160,12 @@ def get_superblue_netlist(v_add):
 if __name__=="__main__":
 
     #### superblue의 경우 module이 하나인 verilog 이므로 다르게 parsing하였다.
-    listlist=['16_ISPD','1','3','4','5','7','10','16','18']
+    listlist=['1','3','4','5','7','10','16','18']
     listlist=['11_ISPD','12_ISPD','16_ISPD']
     for number in listlist:
-        superblue='../../data/'
+        superblue='../../temp_data/verilog/'
         chekcing='superblue'+number
-        superblue=superblue+chekcing+'/'+chekcing+'.v'
+        superblue=superblue+chekcing+'.v'
 
         get_superblue_netlist(superblue)
         print(number)

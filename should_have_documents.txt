@@ -2,24 +2,36 @@
 ~/Documents/PNR/timing/source
 
 
+
 /cts_previous_version
+########################################################################################################################################################################################################
 	/CTO.py
 	/CTS.py
 	/CTS_RGM.py
 	/making_def_with_cts.py
 	/making_def_with_cts_RGM.py
 
-/delay_calc
-	/all_process.py
-	/comparing_temp.py
-	/get_hypergraph.py
-	/get_inputs.py
-	/get_position_by_v.py
+
+
+!!delay_calc
+########################################################################################################################################################################################################
 	/get_verilog_file_from_def.py
+
+	/get_hypergraph.py
+	/get_position_by_v.py
+	/comparing_temp.py
+
 	/making_temp_sdc.py
-	/sample.py
+
+	/get_inputs.py
+
+-all_process.py (get_verilog_file_from_def.py, get_lib_directory.py, get_hypergraph, get_position_by_v.py, comparing_temp.py를 실행하는 코드, 삭제해야함)
+-sample.py (all_process.py를 실행하는 코드, 삭제해야함)
+
+
 
 /delay_calc_previous_version
+########################################################################################################################################################################################################
 	/0_revise_checking.py
 	/0_revise_def_file.py
 	/1_for_check.py
@@ -34,7 +46,10 @@
 	/printing_path.py
 	/test-1.py
 
+
+
 !!lib_parsing
+########################################################################################################################################################################################################
 -lib_parsing_real.py	-ing
 (lib파일을 parsing하여 하나의 lib파일이 있는 디렉토리에 lib파일명과 같은 하위 디렉토리 생성 후, 해당 디렉토리에 lib파일을 parsing하여 내용을 저장하는 코드)
 
@@ -43,14 +58,14 @@
 
 -test_test_parsing.py (lib파일의 주석처리하는 함수 테스트용, 삭제해야함)
 
--lib_parsing_final.py (lib_parsing_real.py로 대체,삭제해야함)
 -test_lib.py (lib_parsing_real.py 실행 파일, 삭제해야함)
+-lib_parsing_final.py (lib_parsing_real.py로 대체,삭제해야함)
 -lib_medium.py (lib 파일 parsing 이전 버전, 삭제해야함)
 -os_medium_table.py (lib_medium.py 실행 파일, 삭제해야함)
 -parsing_native_text.py (lib파일에서 text파일로 쪼개는 파일, 삭제해야함)
 -making_state_table.py (lib파일에서 임의의 cell에 대한 statetable을 만드는 코드, 삭제해야함)
 
--get_lib_directory.py (파일 및 디렉토리명을 수정하는 코드, 삭제해야함)
+-get_lib_directory.py (lib를 parsing하는 코드, lib_parsing_real.py로 parsing하는 코드를 업데이트 했기 때문에 삭제해야함)
 -get_lib_from_opensta_example.py (example lib파일에 대해서 parsing하는 코드, 삭제해야함)
 -get_lib_from_superblue16.py (superblue lib파일에 대해서 parsing하는 코드, 삭제해야함)
 
@@ -61,10 +76,8 @@
 
 
 
-
-
-
 !!read_DEF_LEF
+########################################################################################################################################################################################################
 -draw_fixed_MACRO.py	-ing 	
 (superblue문제들에 MACRO들의 위치를 그림으로 출력하는 코드)
 
@@ -94,10 +107,10 @@
 (각 MACRO끼리 하나의 net으로 이어지는 횟수와 다른 하나의 component를 중개로 이어지는 횟수를 정량화한 코드)
 (lef 파일이 있는 디렉토리에 해당 lef파일과 파일명이 같은 하위 디렉토리에 one_module_net_parsing.py의 출력인 temp_net.json과 temp_id.json가 있어야 하고, 해당 하위 디렉토리에 temp_macro_location.txt가 존재해야 한다. 해당 하위 디렉토리에 해당 lef파일과 파일명+_df_total_size.csv과 cost.txt를 저장)
 필요한 파일
-{die_area.txt
+die_area.txt
 temp_net.json
 temp_id.json
 naming.txt
-temp_macro_location.txt}
+temp_macro_location.txt
 
 

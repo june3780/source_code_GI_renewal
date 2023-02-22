@@ -3,19 +3,6 @@ import os
 import re
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 def get_components_macroID(def_file):
     start_idx_components=int()
     end_idx_components=int()

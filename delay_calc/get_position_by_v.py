@@ -1320,18 +1320,18 @@ def get_new_worst_path(worst_nodes,All):
 if __name__ == "__main__":
     ## sys.argv[lef, def, v, lib]
     ##os.chdir('Documents/PNR/timing/source/')
-    file_address_lef='../data/deflef_to_graph_and_verilog/lefs/'
+    file_address_lef='../../data/deflef_to_graph_and_verilog/lefs/'
     file_address_lef=file_address_lef+sys.argv[1]
 
-    file_address_def='../data/deflef_to_graph_and_verilog/defs/'
+    file_address_def='../../data/deflef_to_graph_and_verilog/defs/'
     file_address_def=file_address_def+sys.argv[2]
 
-    file_verilog='../data/deflef_to_graph_and_verilog/hypergraph/'
+    file_verilog='../../data/deflef_to_graph_and_verilog/hypergraph/'
     file_verilog=file_verilog+sys.argv[3].split('.v')[0]+'_'+sys.argv[4].split('.lib')[0]+'/'
     file_verilog_without_clk=file_verilog+'stage_without_clk(temp).pickle'
     file_verilog_with_clk=file_verilog+'stage_with_clk(temp).pickle'
 
-    file_address_lib='../data/deflef_to_graph_and_verilog/libs/'
+    file_address_lib='../../data/deflef_to_graph_and_verilog/libs/'
     file_address_lib=file_address_lib+sys.argv[4].split('.lib')[0]+'/'
     lib_dict=dict()
     lib_dict_add=file_address_lib+'dictionary_of_lib.json'
@@ -1366,7 +1366,7 @@ if __name__ == "__main__":
 
         file_address='../data/macro_info_nangate_typical/'
         wire_load_model=list()   
-        with open('../data/OPENSTA/wire_load_model_openSTA.json', 'r') as f:
+        with open('../../data/OPENSTA/wire_load_model_openSTA.json', 'r') as f:
             wire_load_model=json.load(f)
         f.close()
         temp_capacitance=0.000077161 ########## 1층 layer라고 가정하였다.

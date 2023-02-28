@@ -860,6 +860,8 @@ def get_tree(All,diff):
     #### top_module에 있는 component들을 처리
     for ivalue in All[top_module]['components_counts']:
         for kvalue in All[top_module][ivalue]['ports']:
+            if 'hart_id' in kvalue:
+                print(kvalue)
 
             #### 임의의 component의 port가 상수값에 연결된 경우 net_group의 constant0 혹은 constant1에 component와 port를 추가
             if All[top_module][ivalue]['ports'][kvalue]=='1\'b0':
@@ -1010,11 +1012,13 @@ def get_tree(All,diff):
                 del net_group[group_assign[ivalue][kdx][tdx]]
 
     real_net_group=copy.deepcopy(net_group)
+    temp_matching_net=copy.deepcopy(net_group)
     #### net_group에 will_add_net을 추가함으로서 assign 구문에 의해 합쳐지는 집합들을 net_group에 최신화
     for idx,ivalue in enumerate(will_add_net):
         #### net_group에는 assignModule에 idx번째 net을 추가
         net_group.update({'assignModule'+str(idx):will_add_net[ivalue]})
         real_net_group.update({ivalue:will_add_net[ivalue]})
+        temp_matching_net.update({ivalue:'assignModule'+str(idx)})
 
 
 ######################## checking 영역
@@ -1044,6 +1048,7 @@ def get_tree(All,diff):
     elif set(only_components)!=set(checking_only_components):
         print('Error : some_components are not in net_list or some_components in net_list which is not in verilog')
 
+    print(len(only_components))
 
 
 
@@ -1084,10 +1089,13 @@ def get_tree(All,diff):
 
     #### 상위모듈들은 제거하여 각 module의 name이 아닌 module의 id를 각 components의 이름으로 갖는 딕셔너리 저장
     checking_id_components_modified=dict()
+    #### 이름이 바뀌는 conponents들의 index확인용 딕션너리 : matching_dict
+    matching_dict=dict()
     for ivalue in checking_only_components:
         #### 해당 component가 PIN일 경우 그대로 PIN의 이름으로 저장한다.
         if ivalue.startswith('PIN '):
             checking_id_components_modified.update({ivalue:checking_only_components[ivalue]})
+            matching_dict.update({ivalue:ivalue})
         #### 해당 component가 PIN이 아닌 경우 해당 component가 선언된, 해당 component의 이름에서 가장 하위 module이 되는 module의 id와 component의 이름으로 저장한다.
         else:
             #### 해당 component의 이름 : temp_components
@@ -1104,15 +1112,20 @@ def get_tree(All,diff):
                         temp_module=All[temp_module][templist[kdx]]['id']
                 #### 해당 temp_module+'/'+temp_components로 해당 component의 이름을 다르게 저장한다.
                 checking_id_components_modified.update({temp_module+'/'+temp_components:checking_only_components[ivalue]})
+                matching_dict.update({ivalue:temp_module+'/'+temp_components})
             #### top_module에서 선언된 component들은 top_module+'/'+temp_components로 해당 component의 이름을 다르게 저장한다.
             else:
                 checking_id_components_modified.update({top_module+'/'+temp_components:checking_only_components[ivalue]})
+                matching_dict.update({ivalue:top_module+'/'+temp_components})
 
     #### 이름이 바뀐 component들의 집합을 json파일로 저장
     with open(upper_directory+'/'+the_v+'/checking_id_components_modified.json','w') as fw:
         json.dump(checking_id_components_modified,fw,indent=4)
     fw.close()
 
+    with open(upper_directory+'/'+the_v+'/matching_dict.json','w') as fw:
+        json.dump(matching_dict,fw,indent=4)
+    fw.close()
     #### real_net_group에서의 원소 중에 임의의 component가 외부 PIN일 경우, 해당 net에 외부 PIN을 저장한다.
     for ivalue in real_net_group:
         if ivalue in All[top_module]['input'] or ivalue in All[top_module]['output']:
@@ -1121,7 +1134,7 @@ def get_tree(All,diff):
 
     #### 구한 net의 총 갯수를 화면에 출력
     print('net_counts :',len(net_group))
-
+    
     #### net_group에서 쓰이는 net의 이름과 각 net의 원소들인 component들도 선언된 각 module의 id를 이름으로 갖는 딕셔너리 생성
     new_net_group=dict()
     for ivalue in net_group:
@@ -1150,6 +1163,7 @@ def get_tree(All,diff):
             conseq=ivalue
         #### new_net_group에 각각의 conseq을 저장
         new_net_group.update({conseq:list()})
+        temp_matching_net[ivalue]=conseq
 
         for kvalue in net_group[ivalue]:
             #### 각 net의 구성요소들도 conseq과 마찬가지로 선언된 최하위의 module의 id+'/'+components_id+' '+port의 형태로 result로 저장
@@ -1177,8 +1191,8 @@ def get_tree(All,diff):
                 result=kvalue
             #### 각 result를 new_net_group의 conseq인 net에 추가
             new_net_group[conseq].append(result)
-
-
+    print('ptmglwnsAWerer!!@!@')
+    print(len(real_net_group))
     #### new_net_group에서의 net이름은 assignModule이지만 해당 net에 외부 PIN이 있을 경우, net의 이름을 해당 외부 PIN으로 바꿔준다.
     modified_group=dict()
     for ivalue in new_net_group:
@@ -1193,19 +1207,30 @@ def get_tree(All,diff):
             #### 외부 PIN이 있을 경우 (assign그룹의 net이 아닌경우)
             if che=='che' and 'assignModule' not in ivalue:
                 modified_group.update({'PIN '+ivalue:new_net_group[ivalue]})
+                for temp_ivalue in temp_matching_net:
+                    if temp_matching_net[temp_ivalue]==ivalue:
+                        temp_matching_net[temp_ivalue]='PIN '+ivalue
 
             #### 외부 PIN이 없을 경우
             else:
                 #### assignModule도 아니고, constant0와 constant1도 아니면 top_module의 wire_net이다.
                 if 'assignModule' not in ivalue and ivalue!='constant0' and ivalue!='constant1':
+                    for temp_ivalue in temp_matching_net:
+                        if temp_matching_net[temp_ivalue]==ivalue:
+                            temp_matching_net[temp_ivalue]=top_module+'/'+ivalue
                     modified_group.update({top_module+'/'+ivalue:new_net_group[ivalue]})
                 #### assignModule의 경우와 constant0, constant1의 경우 그대로 저장한다.
                 else:
                     modified_group.update({ivalue:new_net_group[ivalue]})
         #### '/'이 있을 경우 modified_group에 최하위 module과 해당 module에서의 id로 net을 저장한다.
         else:
+            for temp_ivalue in temp_matching_net:
+                if temp_matching_net[temp_ivalue]==ivalue:
+                    temp_matching_net[temp_ivalue]=ivalue.split('/'+ivalue.split('/')[-1])[0].split('/')[-1]+'/'+ivalue.split('/')[-1]
             modified_group.update({ivalue.split('/'+ivalue.split('/')[-1])[0].split('/')[-1]+'/'+ivalue.split('/')[-1]:new_net_group[ivalue]})
 
+
+    print(len(temp_matching_net))
     for ivalue in modified_group:
         temp=list()
         for kvalue in modified_group[ivalue]:

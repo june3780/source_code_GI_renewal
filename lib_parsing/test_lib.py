@@ -35,7 +35,7 @@ def be_parsing():
     'superblue16_Late.lib', 'superblue16_Early.lib', 'superblue18_Late.lib', 'superblue18_Early.lib']'''
 
 
-    #lib_list=['example1_slow.lib', 'example1_typ.lib','example1_fast.lib']
+    #lib_list=['example1_slow.lib', 'example1_typ.lib','example1_fast.lib','TS1N40LPB512X23M4FWBA_tt1p1v25c.lib']#,'superblue1_Late.lib']
 
 
     #lib_list=['tcbn40lpbwp12tm1ptc_ccs.lib', 'tcbn40lpbwp12tm1plvttc_ccs.lib']
@@ -56,15 +56,20 @@ def be_parsing():
         #print('checking=\''+lib_list[idx]+'\'')
         #if idx<21:
             #continue
-        #for kdx in range(27):
+        start=time.time()
 
-            #start=time.time()
-            print(str(29)+' '+lib_list[idx])
-            print()
-            os.system('python3 lib_parsing_real.py '+str(29)+' '+lib_list[idx])
+        print(lib_list[idx])
+        os.system('python3 lib_get_delay.py '+lib_list[idx])
+        '''for kdx in range(5):
+
+
+            print(str(25+kdx)+' '+lib_list[idx])
+            os.system('python3 lib_parsing_real.py '+str(25+kdx)+' '+lib_list[idx])
+            #print()'''
+        print('end',time.time()-start)
             #print()
-            #print('end',time.time()-start)
-            #print()
+        print()
+            
     print(len(lib_list))
             #break
             

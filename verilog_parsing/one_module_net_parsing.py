@@ -57,10 +57,13 @@ def get_superblue_netlist(v_add):
         if new_lines[idx].startswith('input '):
             input_list.append(new_lines[idx].split(' ')[1].split(';')[0].strip())
         
+            component_id.update({'PIN '+new_lines[idx].split(' ')[1].split(';')[0].strip():'external_input_PIN'})
+
         #### output_external_pin일 경우 input_list에 저장
         elif new_lines[idx].startswith('output '):
             output_list.append(new_lines[idx].split(' ')[1].split(';')[0].strip())
 
+            component_id.update({'PIN '+new_lines[idx].split(' ')[1].split(';')[0].strip():'external_output_PIN'})
 
     for idx in range(len(new_lines)):
 
@@ -161,7 +164,7 @@ if __name__=="__main__":
 
     #### superblue의 경우 module이 하나인 verilog 이므로 다르게 parsing하였다.
     listlist=['1','3','4','5','7','10','16','18']
-    listlist=['11_ISPD','12_ISPD','16_ISPD']
+    #listlist=['11_ISPD','12_ISPD','16_ISPD']
     for number in listlist:
         superblue='../../temp_data/verilog/'
         chekcing='superblue'+number

@@ -95,7 +95,7 @@ def get_hypergraph(net,id,lib_list):
 
 
     #### clock에 동기화되는 register들을 reg_components에 저장
-    reg_components=list()
+    reg_components=set()
     all_component_dict=dict()
     for ivalue in temp_id:
         #### external_output_PIN의 경우 pin의 방향을 input으로 본다.
@@ -110,16 +110,14 @@ def get_hypergraph(net,id,lib_list):
 
         all_component_dict.update({ivalue:dict()})
         for pin in lib_dict[temp_id[ivalue]]:
-            #### 해당 cell의 pin중 clock에 동기화된 pin이 있을 경우 reg_components에 추가
-            if pin=='ff' or pin=='latch':
-                reg_components.append(ivalue)
+            if pin=='ff' or pin=='latch' or pin=='clock_gating_integrated_cell':
                 continue
-
-            if pin=='clock_gating_integrated_cell':
-                continue
-            #### 해당 pin이 input이거나 output일 경우 all_component_dict에 저장
             if 'direction' in lib_dict[temp_id[ivalue]][pin]:
+            #### 해당 cell의 pin중 clock에 동기화된 pin이 있을 경우 reg_components에 추가
                 if lib_dict[temp_id[ivalue]][pin]['direction']=='input':
+                    if 'clock' in lib_dict[temp_id[ivalue]][pin] and ('ff' in lib_dict[temp_id[ivalue]] or 'latch' in lib_dict[temp_id[ivalue]] or temp_id[ivalue] in macro_list):
+                        reg_components.add(ivalue)
+                        
                     if 'input' not in all_component_dict[ivalue]:
                         all_component_dict[ivalue].update({'input':dict()})
                     all_component_dict[ivalue]['input'].update({pin:dict()})
@@ -129,7 +127,6 @@ def get_hypergraph(net,id,lib_list):
                         all_component_dict[ivalue].update({'output':dict()})
                     all_component_dict[ivalue]['output'].update({pin:dict()})
                 
-    reg_components=list(set(reg_components))
         
     #### 하나의 net에서 신호를 출력하는 단자를 파악한 후, 해당 cell의 output 혹은 해당 external_pin의 output에 저장
     for temp_net in all_net:
@@ -168,6 +165,7 @@ def get_hypergraph(net,id,lib_list):
     constant_group=set(constant_group)
     reg_components=set(reg_components)
     pins_group=set(pins_group)
+    reg_all=set()
     #### total_set에는 register, constant_cell, 외부 pin의 내용이 있다.
     total_set=constant_group|reg_components|pins_group
     for reg in reg_components:
@@ -177,95 +175,106 @@ def get_hypergraph(net,id,lib_list):
                 if 'clock' in lib_dict[temp_id[reg]][input_pin]:
                     if all_component_dict[reg]['input'][input_pin]['from'] not in temp_output_group:
                         #### get_origin_group을 통해 같은 net을 공유하는 register의 clock pin의 출처에 대한 데이터를 temp_output_group에 저장
-                        temp_output_group.update({all_component_dict[reg]['input'][input_pin]['from']:get_origin_group(all_component_dict,total_set,[all_component_dict[reg]['input'][input_pin]['from']],lib_dict,temp_id)})
+                        temp_info=get_origin_group(all_component_dict,total_set,[all_component_dict[reg]['input'][input_pin]['from']],lib_dict,temp_id)
+                        temp_output_group.update({all_component_dict[reg]['input'][input_pin]['from']:temp_info[0]})
+                        #### register의 clk에 관련된 cell들을 reg_all에 저장
+                        reg_all=reg_all|temp_info[1]
 
 
 
 
     ########################################## 여기서부터!
 
-
-
-    current_clk_stage=int()
-    ee=int()
+    print(len(reg_all))
     print(len(reg_components))
+    current_clk_stage=int()
 
+    reg_group=copy.deepcopy(reg_components)
     temp_reg_dict=dict()
+    #### 각 register가 clock에 동기화되기 위해 필요한 pin, constant_cell과 임의의 register의 출력값을 필요로 하는 register를 리스트로 가진 temp_output_group을 통해 어떤 reg_cell부터 delay계산을 해야되는지 temp_reg_dict에 저장
+    #### 몇번째로 처리를 해야되는지 명시된 register는 reg_components에서 제거, 모든 register가 제거될 때까지 while문 반복
     while len(reg_components)!=0:
         will_del=set()
         for reg in reg_components:
             if 'input' in all_component_dict[reg]:
                 for input_pin in all_component_dict[reg]['input']:
+                    #### 각 reg의 clock에 동기화된 pin의 출처 : origin_clk_group
                     if 'clock' in lib_dict[temp_id[reg]][input_pin]:
                         origin_clk_group=temp_output_group[all_component_dict[reg]['input'][input_pin]['from']]
                         break_str=''
 
-                        '''if current_clk_stage==10 and ee==0:
-                            print(all_component_dict[reg]['input'][input_pin]['from'])
-                            print()
-                            for kvale in origin_clk_group:
-                                print(kvale)
-                            ee=1'''
                         for temp_component in origin_clk_group:
+                            #### clock에 동기화된 cell이 해당 reg에 존재할 경우 break_str='break'으로 처리
                             if temp_component.split(' ')[0] in reg_components:
                                 break_str='break'
                                 break
+                        #### clock에 동기화된 pin의 출처가 모두 reg_components에 포함되지 않을 때, will_del에 추가, 현재 current_clk_stage번째 처리해야 하는 reg로 temp_reg_dict에 저장
                         if break_str=='':
                             temp_reg_dict.update({reg:current_clk_stage})
                             will_del.add(reg)
+        
+        #### current_clk_stage단계에서 처리되지 못하는 남은 register group : reg_components
         reg_components=reg_components-will_del
         for temp_net in temp_output_group:
             temp_output_group[temp_net]=list(set(temp_output_group[temp_net])-will_del)
         current_clk_stage=current_clk_stage+1
 
-    tt=int()
-    for ivalue in temp_reg_dict:
-        if temp_reg_dict[ivalue]==0 and tt==0:
-            print(ivalue)
-            print(temp_output_group[all_component_dict[ivalue]['input']['CP']['from']])
-            tt=1
-        
-        if temp_reg_dict[ivalue]==1 and tt==1:
-            print(ivalue)
-            print(temp_output_group[all_component_dict[ivalue]['input']['CP']['from']])
-            tt=2
+    
+
 
     return 0
+
 
 
 def get_origin_group(All,total,output_list,lib_all,id_all):
 
     last_list=list()
+    all_list=set()
     con='con'
+    #### output_list에 있는 모든 component들이 register 혹은 constant_cell 혹은 external_PIN일 때까지 while문 반복
     while con=='con':
         con=''
         temp_inputs=list()
         result_list=list()
         will_change_list=list()
+
         for temp_output in output_list:
+            #### 관련된 모든 cell들을 all_list에 저장
+            all_list.add(temp_output.split(' ')[0])
+
+            #### temp_output이 reg, constant, 외부 핀 중 하나일 경우
             if temp_output.split(' ')[0] in total:
                 result_list.append(temp_output)
                 continue
+            #### 동기화 되지 않은 component인 경우 해당 component의 port의 related_pin들을 리스트로 저장하고 해당 pin들의 from을 output_list에 추가
             con='con'
             will_change_list.append(temp_output)
             related_input_pin=list()
             for cases in lib_all[id_all[temp_output.split(' ')[0]]][temp_output.split(' ')[1]]:
                 if cases.startswith('case_'):
+                    #### 해당 case에서의 related_pin : related_input_pin
                     related_input_pin=list(set(related_input_pin)|set(lib_all[id_all[temp_output.split(' ')[0]]][temp_output.split(' ')[1]][cases]['related_pin']))
+            
+            #### 각 case의 related_pin의 from을 temp_inputs에 저장
             for temp_one_input in related_input_pin:
                 temp_inputs.append(All[temp_output.split(' ')[0]]['input'][temp_one_input]['from'])
 
+        #### output_list 최신화
         output_list=list(set(output_list)-set(will_change_list))
+        output_list=list(set(output_list)-set(result_list))
         output_list=list(set(output_list)|set(temp_inputs))
         
+        #### output_list에서 reg나 constant_cell, 외부 핀의 경우를 저장한 result_list을 last_list에 최신화
         last_list=list(set(last_list)|set(result_list))
-        output_list=list(set(output_list)-set(result_list))
 
 
-    return last_list
+    return [last_list,all_list]
 
 
+def get_stage(group):
 
+
+    return 0
 
 if __name__=="__main__":
     #checking_now=sys.argv[1]

@@ -1,11 +1,8 @@
 import json
-import sys
 import copy
 
 
-
-
-def get_hypergraph(net,id,lib_list):
+def get_hypergraph(net,id,lib_list,hyper_add):
     macro_list=['spsram_hd_256x23m4m','spsram_hd_2048x32m4s','spsram_hd_256x22m4m','sprf_hs_128x38m2s'\
     ,'TS1N40LPB1024X32M4FWBA','TS1N40LPB2048X36M4FWBA','TS1N40LPB256X23M4FWBA','TS1N40LPB128X63M4FWBA'\
     ,'TS1N40LPB256X12M4FWBA','TS1N40LPB512X23M4FWBA','TS1N40LPB1024X128M4FWBA','TS1N40LPB2048X32M4FWBA'\
@@ -166,6 +163,7 @@ def get_hypergraph(net,id,lib_list):
     reg_components=set(reg_components)
     pins_group=set(pins_group)
     reg_all=set()
+    clk_group_components=set()
     #### total_set에는 register, constant_cell, 외부 pin의 내용이 있다.
     total_set=constant_group|reg_components|pins_group
     for reg in reg_components:
@@ -183,12 +181,7 @@ def get_hypergraph(net,id,lib_list):
 
 
 
-    ########################################## 여기서부터!
-
-    print(len(reg_all))
-    print(len(reg_components))
     current_clk_stage=int()
-
     reg_group=copy.deepcopy(reg_components)
     temp_reg_dict=dict()
     #### 각 register가 clock에 동기화되기 위해 필요한 pin, constant_cell과 임의의 register의 출력값을 필요로 하는 register를 리스트로 가진 temp_output_group을 통해 어떤 reg_cell부터 delay계산을 해야되는지 temp_reg_dict에 저장
@@ -219,10 +212,190 @@ def get_hypergraph(net,id,lib_list):
             temp_output_group[temp_net]=list(set(temp_output_group[temp_net])-will_del)
         current_clk_stage=current_clk_stage+1
 
-    
+
+    with open(hyper_add+'input_output.json','w')as fw:
+        json.dump(all_component_dict,fw,indent=4)
+    fw.close()
+
+    reg_all=reg_all|reg_group
+
+    clk_to_reg_dict=get_stage(reg_all,reg_group,pins_group,all_component_dict,temp_id,lib_dict)
+    reg_to_reg_dict=get_stage(set(all_component_dict.keys()),reg_group,pins_group,all_component_dict,temp_id,lib_dict)
+
+    with open(hyper_add+'stage_clk_to_reg.json','w')as fw:
+        json.dump(clk_to_reg_dict[0],fw,indent=4)
+    fw.close()
+
+    with open(hyper_add+'related_pin_clk_to_reg.json','w')as fw:
+        json.dump(clk_to_reg_dict[1],fw,indent=4)
+    fw.close()
+
+    with open(hyper_add+'stage_reg_to_reg.json','w')as fw:
+        json.dump(reg_to_reg_dict[0],fw,indent=4)
+    fw.close()
+
+    with open(hyper_add+'related_pin_reg_to_reg.json','w')as fw:
+        json.dump(reg_to_reg_dict[1],fw,indent=4)
+    fw.close()
+
+    with open(hyper_add+'reg_priority.json','w')as fw:
+        json.dump(temp_reg_dict,fw,indent=4)
+    fw.close()
 
 
     return 0
+
+
+
+
+
+
+
+def get_stage(All, reg_group, pin_group, from_to,id_dict,lib_dict):
+    #### 한 component의 output_port가 모두 stage를 갖게 되면 temp_dict에서 소거하는 방식으로 각 component에 stage를 부여
+    temp_dict=copy.deepcopy(All)
+    got_stage=dict()
+    related_group=dict()
+
+    #### related_group을 통해 각 component의 output_port의 delay를 계산하기 위한 해당 component의 input_port를 list로 저장
+    for ivalue in All:
+        related_group.update({ivalue:dict()})
+        #### 해당 component가 external_input_PIN인 경우
+        if ivalue in pin_group:
+            if id_dict[ivalue]=='external_input_PIN':
+                related_group.update({ivalue:{'PIN':list()}})
+        
+        #### 해당 component가 standard_cell 혹은 macro인 경우
+        elif 'output' in from_to[ivalue]:
+            for temp_output in from_to[ivalue]['output']:
+                related_group[ivalue].update({temp_output:list()})
+                for cases in lib_dict[id_dict[ivalue]][temp_output]:
+                    #### 각 case마다 related_pin이 다르므로 해당 case에서의 related_pin을 합집합으로 list에 저장
+                    if cases.startswith('case_'):
+                        related_group[ivalue][temp_output]=list(set(related_group[ivalue][temp_output])|(set(lib_dict[id_dict[ivalue]][temp_output][cases]['related_pin'])))
+
+    #### 임의의 component의 임의의 output_port의 delay를 계산하기 위한 related_pin이 하나도 없을 경우 해당 output_port는 stage를 0으로 갖는다.
+    for ivalue in related_group:
+        for temp_output in related_group[ivalue]:
+            #### 임의의 component의 임의의 output_port의 delay를 계산하기 위한 related_pin이 하나도 없을 경우
+            if len(related_group[ivalue][temp_output])==0:
+                if ivalue not in got_stage:
+                    got_stage.update({ivalue:dict()})
+                got_stage[ivalue].update({temp_output:0})
+    
+    #### register의 경우 강제로 해당 component의 output_port들의 stage를 0으로 부여한다.
+    for ivalue in reg_group:
+        if ivalue not in got_stage:
+            got_stage.update({ivalue:dict()})
+        for temp_output in from_to[ivalue]['output']:
+            got_stage[ivalue].update({temp_output:0})
+
+    #### external_output_PIN은 output_port가 없으므로 해당 함수에서 제거한다.
+    for ivalue in pin_group&All:
+        if id_dict[ivalue]=='external_output_PIN':
+            temp_dict.remove(ivalue)
+
+
+    current_stage=1
+    #### stage를 부여받지 못한 component들을 갯수 : len(temp_dict)
+    while len(temp_dict)!=0:
+        ttt=int()
+        will_del_set=set()
+        for ivalue in temp_dict:
+            #### 각 output_port에 접근
+            for temp_output in from_to[ivalue]['output']:
+
+                #### 해당 component의 output_port 중 stage를 부여받은 port가 있고, 현재 접근한 output_port가 stage를 부여받았으면 continue로 처리
+                if ivalue in got_stage:
+                    if temp_output in got_stage[ivalue]:
+                        continue
+
+                #### max_stage 초기화
+                max_stage=int()
+                #### current_status 초기화
+                current_status=str()
+
+                #### 해당 output_port의 related_pin인 input들에 접근
+                for related_input_pin in related_group[ivalue][temp_output]:
+                    
+                    #### related_pin 중의 임의의 input_port의 신호를 받는 component와 해당 component의 output_port : origin
+                    origin=from_to[ivalue]['input'][related_input_pin]['from']
+                    #### 해당 component가 All 집합 안에 있을 경우만 고려한다.
+                    if origin.split(' ')[0] in All:
+                        #### 해당 component 중 임의의 output_port가 하나라도 stage를 부여받은 경우만 고려한다.
+                        if origin.split(' ')[0] in got_stage:
+                            #### origin에서의 output_port가 stage를 받은 경우만 고려한다.
+                            if origin.split(' ')[1] in got_stage[origin.split(' ')[0]]:
+                                #### max_stage 최신화 (related_pin들중 가장 높은 stage로부터 온 신호의 stage를 max_stage에 저장한다.)
+                                if max_stage<got_stage[origin.split(' ')[0]][origin.split(' ')[1]]:
+                                    max_stage=got_stage[origin.split(' ')[0]][origin.split(' ')[1]]
+                            #### case를 만족하지 못한 경우 current_status='break'로 처리
+                            else:
+                                current_status='break'
+                                break
+                        else:
+                            current_status='break'
+                            break
+                    else:
+                        current_status='break'
+                        break
+                #### current_status가 'break'인 경우 continue로 처리
+                if current_status=='break':
+                    continue
+
+                #### max_stage가 current_stage-1 인 경우 해당 output_port에 stage를 부여
+                if max_stage==current_stage-1:
+                    if ivalue not in got_stage:
+                        got_stage.update({ivalue:dict()})
+                    got_stage[ivalue].update({temp_output:current_stage})
+
+        #### 각 component의 모든 output_port에 stage가 부여된 경우 will_del_set에 추가
+        for ivalue in temp_dict:
+            checking_str=str()
+            if 'output' in from_to[ivalue]:
+                for temp_output in from_to[ivalue]['output']:
+                    current_status=str()
+                    for related_input_pin in related_group[ivalue][temp_output]:
+                        origin=from_to[ivalue]['input'][related_input_pin]['from']
+                        #### 임의의 output_port의 related_pin의 출처가 All 집합에 없을 경우 current_status='break'로 처리
+                        if origin.split(' ')[0] not in All:
+                            current_status='break'
+                            break
+                    
+                    #### current_status=='break'일 경우 checking_str='str'로 남기기
+                    if current_status=='break':
+                        checking_str='str'
+                        continue
+
+                    #### 해당 component의 output_port중 stage가 부여되지 않은 경우 checking_str=str()와 break
+                    if ivalue not in got_stage:
+                        checking_str=str()
+                        break
+                    
+                    #### 해당 output_port가 stage가 부여되지 않은 경우 checking_str=str()와 break
+                    if temp_output not in got_stage[ivalue]:
+                        checking_str=str()
+                        break
+                    
+                    #### 해당 component에 stage가 있는 output_port가 있고, 해당 output_port에도 stage가 부여된 경우 checking_str='str'
+                    checking_str='str'
+
+                #### 해당 component에 대해 모든 checking을 끝냈을 때 checking_str=='str'일 경우 will_del_set에 추가 (current_stage를 부여받은 component들의 집합)
+                if checking_str=='str':
+                    will_del_set.add(ivalue)
+
+        #### will_del_set에 있는 component들을 temp_dict에서 제거
+        for ivalue in will_del_set:
+            temp_dict.remove(ivalue)
+        
+        #### current_stage를 1 더해서 최신화
+        current_stage=current_stage+1
+
+    #### stage의 내용과 related_pin에 대한 정보를 return 
+    return [got_stage,related_group]
+
+
+
 
 
 
@@ -271,25 +444,24 @@ def get_origin_group(All,total,output_list,lib_all,id_all):
     return [last_list,all_list]
 
 
-def get_stage(group):
-
-
-    return 0
 
 if __name__=="__main__":
     #checking_now=sys.argv[1]
 
 
     posible_list=['superblue1','superblue3','superblue4','superblue5','superblue7','superblue10','superblue16','superblue18','medium']
-    posible_list=['medium']
+    posible_list=['superblue10']
     #posible_list=['superblue1']
 
 
     libs=list()
     for checking_now in posible_list:
-
+        hypergraph_address='../../temp_data/hypergraph/'
         net_json='../../temp_data/verilog/'
         component_id='../../temp_data/verilog/'
+
+
+        hypergraph_address=hypergraph_address+checking_now+'/'
         net_json=net_json+checking_now+'/'
         component_id=component_id+checking_now+'/'
         lib_address='../../temp_data/lib/'
@@ -320,4 +492,6 @@ if __name__=="__main__":
 
 
         print(checking_now)
-        get_hypergraph(net_json,component_id,libs)
+
+        get_hypergraph(net_json,component_id,libs,hypergraph_address)
+        
